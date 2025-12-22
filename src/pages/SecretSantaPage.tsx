@@ -285,6 +285,13 @@ export default function SecretSantaPage() {
             Каждый подарок — это маленькое чудо в жизни ребёнка.
           </p>
 
+          {/* Date announcement */}
+          <div className="mt-6 inline-flex items-center gap-2 bg-yellow-400 text-yellow-900 px-5 py-2.5 rounded-full font-bold text-lg shadow-lg">
+            <span>📅</span>
+            <span>Вручение подарков: 26 декабря</span>
+            <span>🎁</span>
+          </div>
+
           <div className="mt-8 flex justify-center gap-4 flex-wrap">
             <div className="bg-white/10 backdrop-blur-sm rounded-xl px-6 py-4 text-center">
               <div className="text-3xl font-bold">{allChildren.length}</div>
