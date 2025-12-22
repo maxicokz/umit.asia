@@ -1,7 +1,18 @@
 # MIME Types
-AddType text/javascript .js
+AddType application/javascript .js .mjs
+AddType text/javascript .js .mjs
 AddType text/css .css
 AddType image/svg+xml .svg
+
+# Force correct MIME types
+<IfModule mod_headers.c>
+  <FilesMatch "\.js$">
+    Header set Content-Type "application/javascript"
+  </FilesMatch>
+  <FilesMatch "\.css$">
+    Header set Content-Type "text/css"
+  </FilesMatch>
+</IfModule>
 
 <IfModule mod_rewrite.c>
   RewriteEngine On
