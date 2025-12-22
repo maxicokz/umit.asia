@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useTranslation } from 'react-i18next'
+import { supabase } from '../services/supabase'
 
 interface Child {
   id: number
@@ -55,12 +55,62 @@ function calculateAge(birthDate: string): number {
   return age
 }
 
+// Telegram notification
+async function sendTelegramNotification(child: Child, donor: { name: string; phone: string; email: string; message: string }) {
+  const botToken = import.meta.env.VITE_TELEGRAM_BOT_TOKEN
+  const chatId = import.meta.env.VITE_TELEGRAM_CHAT_ID
+
+  if (!botToken || !chatId) {
+    console.warn('Telegram credentials not configured')
+    return
+  }
+
+  const categoryEmoji = child.category === 'diagnosis' ? '💙' : '👨‍👩‍👧‍👦'
+  const categoryText = child.category === 'diagnosis' ? 'Ребёнок с диагнозом' : 'Многодетная семья'
+
+  const message = `
+🎅 *НОВАЯ ЗАЯВКА - ТАЙНЫЙ САНТА*
+
+${categoryEmoji} *${categoryText}*
+
+👶 *Ребёнок:* ${child.name}
+📅 *Возраст:* ${calculateAge(child.birthDate)} лет
+📝 *Примечание:* ${child.note}
+🎁 *Подарок:* ${child.gift}
+
+━━━━━━━━━━━━━━━
+
+👤 *Донор:* ${donor.name}
+📱 *Телефон:* ${donor.phone}
+📧 *Email:* ${donor.email || 'не указан'}
+💬 *Сообщение:* ${donor.message || 'нет'}
+
+━━━━━━━━━━━━━━━
+🔗 https://umit.asia/secret-santa
+  `.trim()
+
+  try {
+    await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: message,
+        parse_mode: 'Markdown',
+      }),
+    })
+  } catch (error) {
+    console.error('Failed to send Telegram notification:', error)
+  }
+}
+
 export default function SecretSantaPage() {
-  const { t } = useTranslation()
   const [selectedChild, setSelectedChild] = useState<Child | null>(null)
   const [showModal, setShowModal] = useState(false)
   const [formData, setFormData] = useState({ name: '', phone: '', email: '', message: '' })
   const [submitted, setSubmitted] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [filter, setFilter] = useState<'all' | 'diagnosis' | 'family'>('all')
 
   const allChildren = [...childrenWithDiagnosis, ...childrenFromFamilies]
@@ -72,17 +122,53 @@ export default function SecretSantaPage() {
     setSelectedChild(child)
     setShowModal(true)
     setSubmitted(false)
+    setError(null)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Here you would send to Supabase or email
-    console.log('Reservation:', { child: selectedChild, donor: formData })
-    setSubmitted(true)
-    setTimeout(() => {
-      setShowModal(false)
-      setFormData({ name: '', phone: '', email: '', message: '' })
-    }, 3000)
+    if (!selectedChild) return
+
+    setIsSubmitting(true)
+    setError(null)
+
+    try {
+      // Save to Supabase
+      if (supabase) {
+        const { error: dbError } = await supabase
+          .from('santa_reservations')
+          .insert({
+            child_id: selectedChild.id,
+            child_name: selectedChild.name,
+            child_gift: selectedChild.gift,
+            child_category: selectedChild.category,
+            donor_name: formData.name,
+            donor_phone: formData.phone,
+            donor_email: formData.email || null,
+            message: formData.message || null,
+            status: 'pending',
+          })
+
+        if (dbError) {
+          console.error('Supabase error:', dbError)
+          // Continue anyway - send to Telegram
+        }
+      }
+
+      // Send Telegram notification
+      await sendTelegramNotification(selectedChild, formData)
+
+      setSubmitted(true)
+      setTimeout(() => {
+        setShowModal(false)
+        setFormData({ name: '', phone: '', email: '', message: '' })
+      }, 3000)
+    } catch (err) {
+      console.error('Submit error:', err)
+      setError('Произошла ошибка. Попробуйте ещё раз.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -115,7 +201,7 @@ export default function SecretSantaPage() {
             animationDelay: `${Math.random() * 5}s`,
           }}
         >
-          *
+          ❄
         </div>
       ))}
 
@@ -304,6 +390,12 @@ export default function SecretSantaPage() {
                     </div>
                   </div>
 
+                  {error && (
+                    <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4 text-sm">
+                      {error}
+                    </div>
+                  )}
+
                   <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -361,9 +453,10 @@ export default function SecretSantaPage() {
 
                     <button
                       type="submit"
-                      className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-bold py-3 px-4 rounded-xl transition-all"
+                      disabled={isSubmitting}
+                      className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-bold py-3 px-4 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      Отправить заявку 🎅
+                      {isSubmitting ? 'Отправка...' : 'Отправить заявку 🎅'}
                     </button>
                   </form>
                 </>
