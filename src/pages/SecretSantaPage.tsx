@@ -123,6 +123,7 @@ export default function SecretSantaPage() {
     parentName: '',
     parentPhone: '',
     parentEmail: '',
+    organization: '',
   })
   const [addChildSubmitted, setAddChildSubmitted] = useState(false)
   const [addChildSubmitting, setAddChildSubmitting] = useState(false)
@@ -272,6 +273,7 @@ export default function SecretSantaPage() {
             parent_name: addChildForm.parentName,
             parent_phone: addChildForm.parentPhone,
             parent_email: addChildForm.parentEmail || null,
+            organization: addChildForm.organization || null,
             status: 'pending',
           })
 
@@ -297,9 +299,10 @@ export default function SecretSantaPage() {
 
 ━━━━━━━━━━━━━━━
 
-👤 *Родитель:* ${addChildForm.parentName}
+👤 *Контакт:* ${addChildForm.parentName}
 📱 *Телефон:* ${addChildForm.parentPhone}
 📧 *Email:* ${addChildForm.parentEmail || 'не указан'}
+🏢 *Организация:* ${addChildForm.organization || 'не указана'}
 
 ━━━━━━━━━━━━━━━
 🔗 https://umit.asia/secret-santa
@@ -328,6 +331,7 @@ export default function SecretSantaPage() {
           parentName: '',
           parentPhone: '',
           parentEmail: '',
+          organization: '',
         })
         setAddChildSubmitted(false)
       }, 3000)
@@ -995,6 +999,19 @@ export default function SecretSantaPage() {
                         onChange={(e) => setAddChildForm({ ...addChildForm, parentEmail: e.target.value })}
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         placeholder="example@mail.com"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Организация / Фонд
+                      </label>
+                      <input
+                        type="text"
+                        value={addChildForm.organization}
+                        onChange={(e) => setAddChildForm({ ...addChildForm, organization: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="Название организации (если есть)"
                       />
                     </div>
 
