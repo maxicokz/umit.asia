@@ -1,58 +1,10 @@
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
 import { useTranslation } from 'react-i18next'
-import 'leaflet/dist/leaflet.css'
-import L from 'leaflet'
-
-// Fix for default marker icons in React-Leaflet
-import icon from 'leaflet/dist/images/marker-icon.png'
-import iconShadow from 'leaflet/dist/images/marker-shadow.png'
-
-const DefaultIcon = L.icon({
-  iconUrl: icon,
-  shadowUrl: iconShadow,
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-})
-
-L.Marker.prototype.options.icon = DefaultIcon
 
 export default function MapPage() {
   const { t } = useTranslation()
 
-  // Mock data for map markers
-  const markers = [
-    {
-      id: '1',
-      position: [51.1694, 71.4491] as [number, number],
-      title: 'Нужны продукты питания',
-      type: 'request',
-      category: 'food',
-    },
-    {
-      id: '2',
-      position: [51.1801, 71.4460] as [number, number],
-      title: 'Зимняя одежда для детей',
-      type: 'request',
-      category: 'clothing',
-    },
-    {
-      id: '3',
-      position: [51.1605, 71.4704] as [number, number],
-      title: 'Приют "Верные друзья"',
-      type: 'shelter',
-      category: 'animal',
-    },
-    {
-      id: '4',
-      position: [51.1289, 71.4303] as [number, number],
-      title: 'Дом престарелых "Забота"',
-      type: 'shelter',
-      category: 'human',
-    },
-  ]
-
-  // Center of Astana
-  const center: [number, number] = [51.1694, 71.4491]
+  // Google Maps embed URL for the location
+  const googleMapsEmbedUrl = "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2503.8876543210987!2d71.43012345678901!3d51.16940012345678!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zNTHCsDEwJzEwLjAiTiA3McKwMjUnNDguNCJF!5e0!3m2!1sru!2skz!4v1234567890"
 
   return (
     <div className="h-screen flex flex-col">
@@ -79,37 +31,22 @@ export default function MapPage() {
         </div>
       </div>
 
-      {/* Map */}
+      {/* Google Maps iframe */}
       <div className="flex-1 relative">
-        <MapContainer
-          center={center}
-          zoom={12}
-          className="h-full w-full"
-        >
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
-
-          {markers.map((marker) => (
-            <Marker key={marker.id} position={marker.position}>
-              <Popup>
-                <div className="p-2">
-                  <h3 className="font-bold mb-1">{marker.title}</h3>
-                  <p className="text-sm text-gray-600 mb-2">
-                    {marker.type === 'request' ? t('map.helpRequest') : t('map.shelter')}
-                  </p>
-                  <button className="btn-primary text-xs py-1 px-3">
-                    {t('map.details')}
-                  </button>
-                </div>
-              </Popup>
-            </Marker>
-          ))}
-        </MapContainer>
+        <iframe
+          src={googleMapsEmbedUrl}
+          width="100%"
+          height="100%"
+          style={{ border: 0 }}
+          allowFullScreen
+          loading="lazy"
+          referrerPolicy="no-referrer-when-downgrade"
+          title="Google Maps"
+          className="w-full h-full"
+        />
 
         {/* Legend */}
-        <div className="absolute bottom-4 right-4 bg-white rounded-lg shadow-lg p-4 z-[1000]">
+        <div className="absolute bottom-4 right-4 bg-white rounded-lg shadow-lg p-4 z-10">
           <h3 className="font-bold mb-2 text-sm">{t('map.legend')}</h3>
           <div className="space-y-2 text-xs">
             <div className="flex items-center">
@@ -125,6 +62,16 @@ export default function MapPage() {
               <span>{t('map.volunteers')}</span>
             </div>
           </div>
+
+          {/* Link to open in Google Maps */}
+          <a
+            href="https://goo.gl/maps/Su2h8i2GKBLwcjfJ8"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-3 block text-center text-xs text-primary-600 hover:text-primary-800 font-medium"
+          >
+            {t('map.openInGoogleMaps', 'Открыть в Google Maps')} →
+          </a>
         </div>
       </div>
     </div>
