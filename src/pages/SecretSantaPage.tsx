@@ -253,6 +253,16 @@ export default function SecretSantaPage() {
 
   const hasActiveFilters = categoryFilter !== 'all' || searchQuery !== '' || ageFilter !== 'all'
 
+  // Random child selection
+  const handleRandomChild = () => {
+    const availableChildren = filteredChildren.filter(child => !child.reserved)
+    if (availableChildren.length > 0) {
+      const randomIndex = Math.floor(Math.random() * availableChildren.length)
+      const randomChild = availableChildren[randomIndex]
+      handleReserve(randomChild)
+    }
+  }
+
   // Handle add child form submission
   const handleAddChildSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -260,13 +270,16 @@ export default function SecretSantaPage() {
     setAddChildError(null)
 
     try {
+      // Format date from YYYY-MM-DD to DD.MM.YYYY for storage
+      const formattedBirthDate = addChildForm.birthDate.split('-').reverse().join('.')
+
       // Save to Supabase
       if (supabase) {
         const { error: dbError } = await supabase
           .from('santa_child_requests')
           .insert({
             child_name: addChildForm.childName,
-            birth_date: addChildForm.birthDate,
+            birth_date: formattedBirthDate,
             category: addChildForm.category,
             note: addChildForm.note,
             gift: addChildForm.gift,
@@ -288,11 +301,13 @@ export default function SecretSantaPage() {
 
       if (botToken && chatId) {
         const categoryText = addChildForm.category === 'diagnosis' ? 'Ребёнок с диагнозом' : 'Многодетная семья'
+        // Format date from YYYY-MM-DD to DD.MM.YYYY
+        const formattedDate = addChildForm.birthDate.split('-').reverse().join('.')
         const message = `
 📝 *НОВАЯ ЗАЯВКА НА ДОБАВЛЕНИЕ РЕБЁНКА*
 
 👶 *Ребёнок:* ${addChildForm.childName}
-📅 *Дата рождения:* ${addChildForm.birthDate}
+📅 *Дата рождения:* ${formattedDate}
 📂 *Категория:* ${categoryText}
 📝 *Примечание:* ${addChildForm.note}
 🎁 *Желаемый подарок:* ${addChildForm.gift}
@@ -414,14 +429,21 @@ export default function SecretSantaPage() {
             </div>
           </div>
 
-          {/* Add child button */}
-          <div className="mt-6">
+          {/* Action buttons */}
+          <div className="mt-6 flex flex-wrap justify-center gap-3">
+            <button
+              onClick={handleRandomChild}
+              className="inline-flex items-center gap-2 bg-gradient-to-r from-red-500 to-green-500 hover:from-red-600 hover:to-green-600 text-white px-6 py-2.5 rounded-full font-semibold transition-all shadow-lg"
+            >
+              <span>🎲</span>
+              <span>Случайный подарок</span>
+            </button>
             <button
               onClick={() => setShowAddChildModal(true)}
               className="inline-flex items-center gap-2 bg-white/20 hover:bg-white/30 text-white px-5 py-2.5 rounded-full font-semibold transition-all border border-white/30"
             >
               <span>➕</span>
-              <span>Добавить ребёнка в список</span>
+              <span>Добавить ребёнка</span>
             </button>
           </div>
         </div>
@@ -908,12 +930,12 @@ export default function SecretSantaPage() {
                         Дата рождения *
                       </label>
                       <input
-                        type="text"
+                        type="date"
                         required
                         value={addChildForm.birthDate}
                         onChange={(e) => setAddChildForm({ ...addChildForm, birthDate: e.target.value })}
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="ДД.ММ.ГГГГ"
+                        max={new Date().toISOString().split('T')[0]}
                       />
                     </div>
 
