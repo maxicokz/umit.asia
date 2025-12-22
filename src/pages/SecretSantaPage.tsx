@@ -116,6 +116,7 @@ export default function SecretSantaPage() {
   const [categoryFilter, setCategoryFilter] = useState<'all' | 'diagnosis' | 'family'>('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [ageFilter, setAgeFilter] = useState<'all' | '0-3' | '4-6' | '7-10' | '11+'>('all')
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
 
   // SEO - set document title
   useEffect(() => {
@@ -376,23 +377,51 @@ export default function SecretSantaPage() {
           ))}
         </div>
 
-        {/* Clear filters & Results count */}
-        {hasActiveFilters && (
-          <div className="flex justify-center items-center gap-4 mt-4">
-            <span className="text-blue-200 text-sm">
-              Найдено: {filteredChildren.length} из {allChildren.length}
-            </span>
+        {/* View Toggle & Clear filters */}
+        <div className="flex justify-center items-center gap-4 mt-4 flex-wrap">
+          {/* View Mode Toggle */}
+          <div className="flex items-center gap-1 bg-white/10 rounded-full p-1">
             <button
-              onClick={clearFilters}
-              className="text-yellow-400 hover:text-yellow-300 text-sm underline"
+              onClick={() => setViewMode('grid')}
+              className={`px-3 py-1.5 rounded-full text-sm transition-all ${
+                viewMode === 'grid'
+                  ? 'bg-white text-blue-900'
+                  : 'text-white hover:bg-white/20'
+              }`}
+              title="Карточки"
             >
-              Сбросить фильтры
+              <span className="hidden sm:inline">▦</span> Карточки
+            </button>
+            <button
+              onClick={() => setViewMode('list')}
+              className={`px-3 py-1.5 rounded-full text-sm transition-all ${
+                viewMode === 'list'
+                  ? 'bg-white text-blue-900'
+                  : 'text-white hover:bg-white/20'
+              }`}
+              title="Список"
+            >
+              <span className="hidden sm:inline">☰</span> Список
             </button>
           </div>
-        )}
+
+          {hasActiveFilters && (
+            <>
+              <span className="text-blue-200 text-sm">
+                Найдено: {filteredChildren.length} из {allChildren.length}
+              </span>
+              <button
+                onClick={clearFilters}
+                className="text-yellow-400 hover:text-yellow-300 text-sm underline"
+              >
+                Сбросить фильтры
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
-      {/* Children Grid */}
+      {/* Children Grid/List */}
       <div className="relative z-10 container mx-auto px-4 pb-16">
         {filteredChildren.length === 0 ? (
           <div className="text-center py-16">
@@ -406,7 +435,8 @@ export default function SecretSantaPage() {
               Сбросить фильтры
             </button>
           </div>
-        ) : (
+        ) : viewMode === 'grid' ? (
+          /* Grid View */
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredChildren.map((child) => (
               <div
@@ -447,6 +477,68 @@ export default function SecretSantaPage() {
                   >
                     <span>🎅</span>
                     Стать Тайным Сантой
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          /* List View */
+          <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+            {/* List Header */}
+            <div className="hidden md:grid md:grid-cols-12 gap-4 px-6 py-3 bg-gray-100 text-sm font-semibold text-gray-600">
+              <div className="col-span-3">Имя</div>
+              <div className="col-span-1 text-center">Возраст</div>
+              <div className="col-span-3">Примечание</div>
+              <div className="col-span-3">Подарок</div>
+              <div className="col-span-2"></div>
+            </div>
+            {/* List Items */}
+            {filteredChildren.map((child, index) => (
+              <div
+                key={child.id}
+                className={`grid grid-cols-1 md:grid-cols-12 gap-4 px-6 py-4 items-center hover:bg-gray-50 transition-colors ${
+                  index !== filteredChildren.length - 1 ? 'border-b border-gray-100' : ''
+                }`}
+              >
+                {/* Mobile: Full card layout */}
+                <div className="md:col-span-3 flex items-center gap-3">
+                  <span className="text-2xl">
+                    {child.category === 'diagnosis' ? '💙' : '👨‍👩‍👧‍👦'}
+                  </span>
+                  <div>
+                    <div className="font-semibold text-gray-800">{child.name}</div>
+                    <div className="text-xs text-gray-500 md:hidden">
+                      {calculateAge(child.birthDate)} лет
+                    </div>
+                  </div>
+                </div>
+
+                <div className="hidden md:block md:col-span-1 text-center">
+                  <span className="inline-flex items-center justify-center w-8 h-8 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold">
+                    {calculateAge(child.birthDate)}
+                  </span>
+                </div>
+
+                <div className="md:col-span-3">
+                  <p className="text-sm text-gray-600 line-clamp-2">{child.note}</p>
+                </div>
+
+                <div className="md:col-span-3">
+                  <div className="flex items-center gap-2 bg-gradient-to-r from-red-50 to-green-50 rounded-lg px-3 py-2">
+                    <span>🎁</span>
+                    <span className="font-medium text-gray-800 text-sm">{child.gift}</span>
+                  </div>
+                </div>
+
+                <div className="md:col-span-2">
+                  <button
+                    onClick={() => handleReserve(child)}
+                    className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold py-2 px-3 rounded-lg transition-all text-sm flex items-center justify-center gap-1"
+                  >
+                    <span>🎅</span>
+                    <span className="hidden lg:inline">Стать Сантой</span>
+                    <span className="lg:hidden">Выбрать</span>
                   </button>
                 </div>
               </div>
