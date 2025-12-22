@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { supabase } from '../services/supabase'
 
 interface Child {
@@ -111,12 +111,69 @@ export default function SecretSantaPage() {
   const [submitted, setSubmitted] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [filter, setFilter] = useState<'all' | 'diagnosis' | 'family'>('all')
+
+  // Filters
+  const [categoryFilter, setCategoryFilter] = useState<'all' | 'diagnosis' | 'family'>('all')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [ageFilter, setAgeFilter] = useState<'all' | '0-3' | '4-6' | '7-10' | '11+'>('all')
+
+  // SEO - set document title
+  useEffect(() => {
+    document.title = 'Тайный Санта - Подари чудо детям | Úmit'
+
+    // Add meta tags
+    const metaDescription = document.querySelector('meta[name="description"]')
+    if (metaDescription) {
+      metaDescription.setAttribute('content', 'Станьте Тайным Сантой для особенных детей. 26 детей ждут новогодних подарков. Подарите чудо!')
+    }
+
+    return () => {
+      document.title = 'Úmit - Социальный реестр адресной помощи'
+    }
+  }, [])
 
   const allChildren = [...childrenWithDiagnosis, ...childrenFromFamilies]
-  const filteredChildren = filter === 'all'
-    ? allChildren
-    : allChildren.filter(c => c.category === filter)
+
+  // Apply all filters
+  const filteredChildren = useMemo(() => {
+    return allChildren.filter(child => {
+      // Category filter
+      if (categoryFilter !== 'all' && child.category !== categoryFilter) {
+        return false
+      }
+
+      // Search filter (name or gift)
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase()
+        const matchesName = child.name.toLowerCase().includes(query)
+        const matchesGift = child.gift.toLowerCase().includes(query)
+        if (!matchesName && !matchesGift) {
+          return false
+        }
+      }
+
+      // Age filter
+      if (ageFilter !== 'all') {
+        const age = calculateAge(child.birthDate)
+        switch (ageFilter) {
+          case '0-3':
+            if (age > 3) return false
+            break
+          case '4-6':
+            if (age < 4 || age > 6) return false
+            break
+          case '7-10':
+            if (age < 7 || age > 10) return false
+            break
+          case '11+':
+            if (age < 11) return false
+            break
+        }
+      }
+
+      return true
+    })
+  }, [allChildren, categoryFilter, searchQuery, ageFilter])
 
   const handleReserve = (child: Child) => {
     setSelectedChild(child)
@@ -151,7 +208,6 @@ export default function SecretSantaPage() {
 
         if (dbError) {
           console.error('Supabase error:', dbError)
-          // Continue anyway - send to Telegram
         }
       }
 
@@ -170,6 +226,14 @@ export default function SecretSantaPage() {
       setIsSubmitting(false)
     }
   }
+
+  const clearFilters = () => {
+    setCategoryFilter('all')
+    setSearchQuery('')
+    setAgeFilter('all')
+  }
+
+  const hasActiveFilters = categoryFilter !== 'all' || searchQuery !== '' || ageFilter !== 'all'
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-900 via-blue-800 to-indigo-900">
@@ -237,13 +301,35 @@ export default function SecretSantaPage() {
         </div>
       </div>
 
-      {/* Filters */}
+      {/* Search and Filters */}
       <div className="relative z-10 container mx-auto px-4 mb-8">
-        <div className="flex justify-center gap-2 flex-wrap">
+        {/* Search */}
+        <div className="max-w-xl mx-auto mb-6">
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="🔍 Поиск по имени или подарку..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full px-5 py-3 rounded-full bg-white/20 backdrop-blur-sm text-white placeholder-blue-200 border border-white/30 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-white/60 hover:text-white"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Category Filters */}
+        <div className="flex justify-center gap-2 flex-wrap mb-4">
           <button
-            onClick={() => setFilter('all')}
+            onClick={() => setCategoryFilter('all')}
             className={`px-6 py-2 rounded-full font-semibold transition-all ${
-              filter === 'all'
+              categoryFilter === 'all'
                 ? 'bg-yellow-400 text-yellow-900'
                 : 'bg-white/20 text-white hover:bg-white/30'
             }`}
@@ -251,75 +337,122 @@ export default function SecretSantaPage() {
             Все дети ({allChildren.length})
           </button>
           <button
-            onClick={() => setFilter('diagnosis')}
+            onClick={() => setCategoryFilter('diagnosis')}
             className={`px-6 py-2 rounded-full font-semibold transition-all ${
-              filter === 'diagnosis'
+              categoryFilter === 'diagnosis'
                 ? 'bg-yellow-400 text-yellow-900'
                 : 'bg-white/20 text-white hover:bg-white/30'
             }`}
           >
-            С диагнозами ({childrenWithDiagnosis.length})
+            💙 С диагнозами ({childrenWithDiagnosis.length})
           </button>
           <button
-            onClick={() => setFilter('family')}
+            onClick={() => setCategoryFilter('family')}
             className={`px-6 py-2 rounded-full font-semibold transition-all ${
-              filter === 'family'
+              categoryFilter === 'family'
                 ? 'bg-yellow-400 text-yellow-900'
                 : 'bg-white/20 text-white hover:bg-white/30'
             }`}
           >
-            Многодетные семьи ({childrenFromFamilies.length})
+            👨‍👩‍👧‍👦 Многодетные ({childrenFromFamilies.length})
           </button>
         </div>
+
+        {/* Age Filters */}
+        <div className="flex justify-center gap-2 flex-wrap">
+          <span className="text-blue-200 text-sm self-center mr-2">Возраст:</span>
+          {(['all', '0-3', '4-6', '7-10', '11+'] as const).map((age) => (
+            <button
+              key={age}
+              onClick={() => setAgeFilter(age)}
+              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
+                ageFilter === age
+                  ? 'bg-green-400 text-green-900'
+                  : 'bg-white/10 text-white hover:bg-white/20'
+              }`}
+            >
+              {age === 'all' ? 'Все' : age === '11+' ? '11+ лет' : `${age} лет`}
+            </button>
+          ))}
+        </div>
+
+        {/* Clear filters & Results count */}
+        {hasActiveFilters && (
+          <div className="flex justify-center items-center gap-4 mt-4">
+            <span className="text-blue-200 text-sm">
+              Найдено: {filteredChildren.length} из {allChildren.length}
+            </span>
+            <button
+              onClick={clearFilters}
+              className="text-yellow-400 hover:text-yellow-300 text-sm underline"
+            >
+              Сбросить фильтры
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Children Grid */}
       <div className="relative z-10 container mx-auto px-4 pb-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredChildren.map((child) => (
-            <div
-              key={child.id}
-              className="bg-white rounded-2xl shadow-xl overflow-hidden transform hover:scale-105 transition-transform duration-300"
+        {filteredChildren.length === 0 ? (
+          <div className="text-center py-16">
+            <div className="text-6xl mb-4">🔍</div>
+            <p className="text-white text-xl mb-2">Ничего не найдено</p>
+            <p className="text-blue-200">Попробуйте изменить параметры поиска</p>
+            <button
+              onClick={clearFilters}
+              className="mt-4 px-6 py-2 bg-yellow-400 text-yellow-900 rounded-full font-semibold hover:bg-yellow-300 transition-all"
             >
-              <div className={`h-2 ${child.category === 'diagnosis' ? 'bg-red-400' : 'bg-green-400'}`} />
-              <div className="p-6">
-                <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <h3 className="text-lg font-bold text-gray-800">{child.name}</h3>
-                    <p className="text-sm text-gray-500">
-                      {calculateAge(child.birthDate)} лет • {child.birthDate}
+              Сбросить фильтры
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredChildren.map((child) => (
+              <div
+                key={child.id}
+                className="bg-white rounded-2xl shadow-xl overflow-hidden transform hover:scale-105 transition-transform duration-300"
+              >
+                <div className={`h-2 ${child.category === 'diagnosis' ? 'bg-red-400' : 'bg-green-400'}`} />
+                <div className="p-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-800">{child.name}</h3>
+                      <p className="text-sm text-gray-500">
+                        {calculateAge(child.birthDate)} лет • {child.birthDate}
+                      </p>
+                    </div>
+                    <span className="text-3xl">
+                      {child.category === 'diagnosis' ? '💙' : '👨‍👩‍👧‍👦'}
+                    </span>
+                  </div>
+
+                  <div className="mb-4">
+                    <p className="text-sm text-gray-600 bg-gray-50 rounded-lg px-3 py-2">
+                      {child.note}
                     </p>
                   </div>
-                  <span className="text-3xl">
-                    {child.category === 'diagnosis' ? '💙' : '👨‍👩‍👧‍👦'}
-                  </span>
-                </div>
 
-                <div className="mb-4">
-                  <p className="text-sm text-gray-600 bg-gray-50 rounded-lg px-3 py-2">
-                    {child.note}
-                  </p>
-                </div>
-
-                <div className="bg-gradient-to-r from-red-50 to-green-50 rounded-xl p-4 mb-4">
-                  <div className="text-xs text-gray-500 mb-1">Мечтает о подарке:</div>
-                  <div className="text-lg font-semibold text-gray-800 flex items-center">
-                    <span className="mr-2">🎁</span>
-                    {child.gift}
+                  <div className="bg-gradient-to-r from-red-50 to-green-50 rounded-xl p-4 mb-4">
+                    <div className="text-xs text-gray-500 mb-1">Мечтает о подарке:</div>
+                    <div className="text-lg font-semibold text-gray-800 flex items-center">
+                      <span className="mr-2">🎁</span>
+                      {child.gift}
+                    </div>
                   </div>
-                </div>
 
-                <button
-                  onClick={() => handleReserve(child)}
-                  className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-bold py-3 px-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-2"
-                >
-                  <span>🎅</span>
-                  Стать Тайным Сантой
-                </button>
+                  <button
+                    onClick={() => handleReserve(child)}
+                    className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-bold py-3 px-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-2"
+                  >
+                    <span>🎅</span>
+                    Стать Тайным Сантой
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* How it works */}
