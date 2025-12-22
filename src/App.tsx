@@ -15,6 +15,7 @@ import SheltersPage from './pages/SheltersPage'
 import VolunteersPage from './pages/VolunteersPage'
 import MapPage from './pages/MapPage'
 import RegistryPage from './pages/RegistryPage'
+import SecretSantaPage from './pages/SecretSantaPage'
 import BeneficiaryDashboard from './pages/BeneficiaryDashboard'
 import DonorDashboard from './pages/DonorDashboard'
 import AdminDashboard from './pages/AdminDashboard'
@@ -50,6 +51,7 @@ function App() {
         <Route path="shelters" element={<SheltersPage />} />
         <Route path="volunteers" element={<VolunteersPage />} />
         <Route path="map" element={<MapPage />} />
+        <Route path="secret-santa" element={<SecretSantaPage />} />
 
         {/* Role-based protected routes */}
         <Route

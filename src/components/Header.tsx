@@ -53,6 +53,9 @@ export default function Header() {
             <Link to="/map" className="text-gray-700 hover:text-primary-600 transition-colors">
               {t('nav.map')}
             </Link>
+            <Link to="/secret-santa" className="text-red-600 hover:text-red-700 transition-colors font-semibold flex items-center gap-1">
+              <span>🎅</span> Тайный Санта
+            </Link>
           </nav>
 
           {/* Desktop Auth buttons & Language Switcher */}
@@ -174,6 +177,13 @@ export default function Header() {
                 onClick={closeMobileMenu}
               >
                 {t('nav.map')}
+              </Link>
+              <Link
+                to="/secret-santa"
+                className="text-red-600 hover:text-red-700 transition-colors px-2 py-1 font-semibold flex items-center gap-1"
+                onClick={closeMobileMenu}
+              >
+                <span>🎅</span> Тайный Санта
               </Link>
 
               {/* Mobile Auth Section */}
