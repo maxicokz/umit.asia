@@ -112,6 +112,22 @@ export default function SecretSantaPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  // Add child modal
+  const [showAddChildModal, setShowAddChildModal] = useState(false)
+  const [addChildForm, setAddChildForm] = useState({
+    childName: '',
+    birthDate: '',
+    category: 'diagnosis' as 'diagnosis' | 'family',
+    note: '',
+    gift: '',
+    parentName: '',
+    parentPhone: '',
+    parentEmail: '',
+  })
+  const [addChildSubmitted, setAddChildSubmitted] = useState(false)
+  const [addChildSubmitting, setAddChildSubmitting] = useState(false)
+  const [addChildError, setAddChildError] = useState<string | null>(null)
+
   // Filters
   const [categoryFilter, setCategoryFilter] = useState<'all' | 'diagnosis' | 'family'>('all')
   const [searchQuery, setSearchQuery] = useState('')
@@ -236,6 +252,93 @@ export default function SecretSantaPage() {
 
   const hasActiveFilters = categoryFilter !== 'all' || searchQuery !== '' || ageFilter !== 'all'
 
+  // Handle add child form submission
+  const handleAddChildSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setAddChildSubmitting(true)
+    setAddChildError(null)
+
+    try {
+      // Save to Supabase
+      if (supabase) {
+        const { error: dbError } = await supabase
+          .from('santa_child_requests')
+          .insert({
+            child_name: addChildForm.childName,
+            birth_date: addChildForm.birthDate,
+            category: addChildForm.category,
+            note: addChildForm.note,
+            gift: addChildForm.gift,
+            parent_name: addChildForm.parentName,
+            parent_phone: addChildForm.parentPhone,
+            parent_email: addChildForm.parentEmail || null,
+            status: 'pending',
+          })
+
+        if (dbError) {
+          console.error('Supabase error:', dbError)
+        }
+      }
+
+      // Send Telegram notification
+      const botToken = import.meta.env.VITE_TELEGRAM_BOT_TOKEN
+      const chatId = import.meta.env.VITE_TELEGRAM_CHAT_ID
+
+      if (botToken && chatId) {
+        const categoryText = addChildForm.category === 'diagnosis' ? 'Ребёнок с диагнозом' : 'Многодетная семья'
+        const message = `
+📝 *НОВАЯ ЗАЯВКА НА ДОБАВЛЕНИЕ РЕБЁНКА*
+
+👶 *Ребёнок:* ${addChildForm.childName}
+📅 *Дата рождения:* ${addChildForm.birthDate}
+📂 *Категория:* ${categoryText}
+📝 *Примечание:* ${addChildForm.note}
+🎁 *Желаемый подарок:* ${addChildForm.gift}
+
+━━━━━━━━━━━━━━━
+
+👤 *Родитель:* ${addChildForm.parentName}
+📱 *Телефон:* ${addChildForm.parentPhone}
+📧 *Email:* ${addChildForm.parentEmail || 'не указан'}
+
+━━━━━━━━━━━━━━━
+🔗 https://umit.asia/secret-santa
+        `.trim()
+
+        await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text: message,
+            parse_mode: 'Markdown',
+          }),
+        })
+      }
+
+      setAddChildSubmitted(true)
+      setTimeout(() => {
+        setShowAddChildModal(false)
+        setAddChildForm({
+          childName: '',
+          birthDate: '',
+          category: 'diagnosis',
+          note: '',
+          gift: '',
+          parentName: '',
+          parentPhone: '',
+          parentEmail: '',
+        })
+        setAddChildSubmitted(false)
+      }, 3000)
+    } catch (err) {
+      console.error('Submit error:', err)
+      setAddChildError('Произошла ошибка. Попробуйте ещё раз.')
+    } finally {
+      setAddChildSubmitting(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-900 via-blue-800 to-indigo-900">
       {/* Snowflakes CSS */}
@@ -305,6 +408,17 @@ export default function SecretSantaPage() {
               <div className="text-3xl font-bold">{childrenFromFamilies.length}</div>
               <div className="text-blue-200 text-sm">Из многодетных семей</div>
             </div>
+          </div>
+
+          {/* Add child button */}
+          <div className="mt-6">
+            <button
+              onClick={() => setShowAddChildModal(true)}
+              className="inline-flex items-center gap-2 bg-white/20 hover:bg-white/30 text-white px-5 py-2.5 rounded-full font-semibold transition-all border border-white/30"
+            >
+              <span>➕</span>
+              <span>Добавить ребёнка в список</span>
+            </button>
           </div>
         </div>
       </div>
@@ -721,6 +835,175 @@ export default function SecretSantaPage() {
                       className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-bold py-3 px-4 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isSubmitting ? 'Отправка...' : 'Отправить заявку 🎅'}
+                    </button>
+                  </form>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Child Modal */}
+      {showAddChildModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="bg-gradient-to-r from-blue-500 to-purple-500 p-6 text-white">
+              <div className="flex justify-between items-start">
+                <div>
+                  <h3 className="text-xl font-bold">Добавить ребёнка</h3>
+                  <p className="text-white/80">Заполните анкету</p>
+                </div>
+                <button
+                  onClick={() => setShowAddChildModal(false)}
+                  className="text-white/80 hover:text-white text-2xl"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6">
+              {addChildSubmitted ? (
+                <div className="text-center py-8">
+                  <div className="text-6xl mb-4">✅</div>
+                  <h3 className="text-xl font-bold text-gray-800 mb-2">Заявка отправлена!</h3>
+                  <p className="text-gray-600">
+                    Мы рассмотрим вашу заявку и свяжемся с вами.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <p className="text-sm text-gray-500 mb-4">
+                    Если ваш ребёнок нуждается в новогоднем подарке, заполните форму ниже.
+                  </p>
+
+                  {addChildError && (
+                    <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4 text-sm">
+                      {addChildError}
+                    </div>
+                  )}
+
+                  <form onSubmit={handleAddChildSubmit} className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        ФИО ребёнка *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={addChildForm.childName}
+                        onChange={(e) => setAddChildForm({ ...addChildForm, childName: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="Иванов Иван Иванович"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Дата рождения *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={addChildForm.birthDate}
+                        onChange={(e) => setAddChildForm({ ...addChildForm, birthDate: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="ДД.ММ.ГГГГ"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Категория *
+                      </label>
+                      <select
+                        value={addChildForm.category}
+                        onChange={(e) => setAddChildForm({ ...addChildForm, category: e.target.value as 'diagnosis' | 'family' })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      >
+                        <option value="diagnosis">Ребёнок с диагнозом</option>
+                        <option value="family">Многодетная семья</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Диагноз / Примечание *
+                      </label>
+                      <textarea
+                        required
+                        value={addChildForm.note}
+                        onChange={(e) => setAddChildForm({ ...addChildForm, note: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        rows={2}
+                        placeholder="Укажите диагноз или информацию о семье"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Желаемый подарок *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={addChildForm.gift}
+                        onChange={(e) => setAddChildForm({ ...addChildForm, gift: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="О чём мечтает ребёнок?"
+                      />
+                    </div>
+
+                    <hr className="my-4" />
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        ФИО родителя *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={addChildForm.parentName}
+                        onChange={(e) => setAddChildForm({ ...addChildForm, parentName: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="Как к вам обращаться?"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Телефон *
+                      </label>
+                      <input
+                        type="tel"
+                        required
+                        value={addChildForm.parentPhone}
+                        onChange={(e) => setAddChildForm({ ...addChildForm, parentPhone: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="+7 (___) ___-__-__"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Email
+                      </label>
+                      <input
+                        type="email"
+                        value={addChildForm.parentEmail}
+                        onChange={(e) => setAddChildForm({ ...addChildForm, parentEmail: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="example@mail.com"
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={addChildSubmitting}
+                      className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-bold py-3 px-4 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {addChildSubmitting ? 'Отправка...' : 'Отправить заявку ➕'}
                     </button>
                   </form>
                 </>
