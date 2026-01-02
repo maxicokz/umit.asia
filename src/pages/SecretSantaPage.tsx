@@ -758,12 +758,24 @@ export default function SecretSantaPage() {
 
             <div className="p-6">
               {submitted ? (
-                <div className="text-center py-8">
+                <div className="text-center py-6">
                   <div className="text-6xl mb-4">🎉</div>
                   <h3 className="text-xl font-bold text-gray-800 mb-2">Спасибо!</h3>
-                  <p className="text-gray-600">
+                  <p className="text-gray-600 mb-4">
                     Ваша заявка принята. Мы свяжемся с вами в ближайшее время!
                   </p>
+                  <div className="bg-blue-50 rounded-xl p-4 text-left">
+                    <p className="text-sm text-gray-600 mb-2">
+                      Если с вами не связались для уточнения деталей, вы можете связаться напрямую с волонтёром:
+                    </p>
+                    <a
+                      href="tel:+77014058207"
+                      className="inline-flex items-center gap-2 text-blue-600 font-semibold hover:text-blue-800"
+                    >
+                      <span>📞</span>
+                      <span>+7 701 405 8207</span>
+                    </a>
+                  </div>
                 </div>
               ) : (
                 <>
