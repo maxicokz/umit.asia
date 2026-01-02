@@ -11,37 +11,9 @@ interface Child {
   reserved?: boolean
 }
 
-const childrenWithDiagnosis: Child[] = [
-  { id: 3, name: 'Амантай Бекарыс', birthDate: '13.10.2018', note: 'Выраженная умственная отсталость', gift: 'Пианино игрушечное', category: 'diagnosis' },
-  { id: 4, name: 'Думанұлы Хамитжан', birthDate: '03.02.2016', note: 'Смешанные специфические расстройства психологического характера', gift: 'Аэроплан, масса для лепки', category: 'diagnosis' },
-  { id: 6, name: 'Иімұхамбет Ерасыл', birthDate: '09.06.2015', note: 'Смешанные специфические расстройства психологического характера', gift: 'Пуховик, рост 146', category: 'diagnosis' },
-  { id: 9, name: 'Серік Сержан Сағадатұлы', birthDate: '22.12.2017', note: 'НОДА (нарушение опорно-двигательного аппарата)', gift: 'Планшет', category: 'diagnosis' },
-  { id: 12, name: 'Серікбай Асылым', birthDate: '03.05.2021', note: 'РАС (Расстройства аутистического спектра)', gift: 'Робот Собака', category: 'diagnosis' },
-  { id: 14, name: 'Ташимова Самира', birthDate: '20.10.2016', note: 'Умственная отсталость (тяжелая форма)', gift: 'Осенняя курточка. Рост 134', category: 'diagnosis' },
-  { id: 17, name: 'Күлбаринова Ислана', birthDate: '10.09.2020', note: 'НОДА (нарушение опорно-двигательного аппарата)', gift: 'Кукла Реборн', category: 'diagnosis' },
-  { id: 19, name: 'Қалдарбек Абдулмәлит', birthDate: '25.12.2020', note: 'Общие расстройства психологического характера', gift: 'Большая машинка', category: 'diagnosis' },
-  { id: 21, name: 'Нұрлыбек Даулан', birthDate: '21.10.2021', note: 'ЗПРР, РАС', gift: 'Батут', category: 'diagnosis' },
-  { id: 23, name: 'Мұхамбедіяр Айнакмоз', birthDate: '10.10.2018', note: 'Умственная отсталость', gift: 'Батут', category: 'diagnosis' },
-  { id: 24, name: 'Жігер Ануар', birthDate: '17.05.2016', note: 'Умственная отсталость', gift: 'Робот Собака', category: 'diagnosis' },
-  { id: 25, name: 'Қалдарбек Абдурахим', birthDate: '24.05.2018', note: 'Выраженная умственная отсталость', gift: 'Машинка', category: 'diagnosis' },
-  { id: 26, name: 'Айтым Арсен', birthDate: '20.08.2016', note: 'Выраженная умственная отсталость. Заболевания суставов', gift: 'Домбра', category: 'diagnosis' },
-  { id: 28, name: 'Берік Осман', birthDate: '20.04.2021', note: 'ЗПРР, РАС. Общие расстройства психологического характера', gift: 'Велосипед', category: 'diagnosis' },
-  { id: 30, name: 'Мантай Ағұлым', birthDate: '29.12.2019', note: 'Смешанные специфические расстройства психологического характера', gift: 'Батут', category: 'diagnosis' },
-  { id: 31, name: 'Қайролла Арслан', birthDate: '06.07.2021', note: 'Смешанные специфические расстройства психологического характера', gift: 'Зимняя обувь', category: 'diagnosis' },
-  { id: 32, name: 'Талғатқызы Аруна', birthDate: '25.11.2021', note: 'Синдром Ретта', gift: 'Домик', category: 'diagnosis' },
-  { id: 33, name: 'Айғали Абдурахман', birthDate: '23.07.2020', note: 'Выраженное ЗПМ и РР. НОДА', gift: 'Домик', category: 'diagnosis' },
-  { id: 34, name: 'Асетжанов Асылжан', birthDate: '08.05.2015', note: 'Смешанные специфические расстройства психологического характера', gift: 'Джип', category: 'diagnosis' },
-  { id: 35, name: 'Алписбаев Нұрислам', birthDate: '11.11.2012', note: 'Смешанные специфические расстройства психологического характера', gift: 'Самолет', category: 'diagnosis' },
-]
+const childrenWithDiagnosis: Child[] = []
 
-const childrenFromFamilies: Child[] = [
-  { id: 104, name: 'Камза Темір Саятұлы', birthDate: '03.03.2020', note: 'Многодетная семья (6 детей)', gift: 'Электронная Машина', category: 'family' },
-  { id: 107, name: 'Ермағамбетова Эльмира Нұрымқызы', birthDate: '12.03.2013', note: 'Многодетная семья (8 детей)', gift: 'Планшет', category: 'family' },
-  { id: 108, name: 'Тұрғанбай Нұрайым Бекнұрқызы', birthDate: '23.04.2015', note: 'Многодетная семья (8 детей)', gift: 'Планшет', category: 'family' },
-  { id: 109, name: 'Тұрғанбай Нұрбақыт Бекнұрқызы', birthDate: '22.11.2017', note: 'Многодетная семья (8 детей)', gift: 'Планшет', category: 'family' },
-  { id: 110, name: 'Тұрғанбай Айсауле Бекнұрқызы', birthDate: '05.07.2019', note: 'Многодетная семья (8 детей)', gift: 'Планшет', category: 'family' },
-  { id: 117, name: 'Маенов Рахман Бауыржанұлы', birthDate: '25.05.2013', note: 'Многодетная семья (6 детей)', gift: 'Спортивный костюм на 14 лет', category: 'family' },
-]
+const childrenFromFamilies: Child[] = []
 
 function calculateAge(birthDate: string): number {
   const [day, month, year] = birthDate.split('.').map(Number)
@@ -406,13 +378,6 @@ export default function SecretSantaPage() {
             Выберите ребёнка и станьте его Тайным Сантой.
             Каждый подарок — это маленькое чудо в жизни ребёнка.
           </p>
-
-          {/* Date announcement */}
-          <div className="mt-6 inline-flex items-center gap-2 bg-yellow-400 text-yellow-900 px-5 py-2.5 rounded-full font-bold text-lg shadow-lg">
-            <span>📅</span>
-            <span>Вручение подарков: 26 декабря</span>
-            <span>🎁</span>
-          </div>
 
           <div className="mt-8 flex justify-center gap-4 flex-wrap">
             <div className="bg-white/10 backdrop-blur-sm rounded-xl px-6 py-4 text-center">
