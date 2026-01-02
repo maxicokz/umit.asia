@@ -221,10 +221,6 @@ export default function SecretSantaPage() {
       await sendTelegramNotification(selectedChild, formData)
 
       setSubmitted(true)
-      setTimeout(() => {
-        setShowModal(false)
-        setFormData({ name: '', phone: '', email: '', message: '' })
-      }, 3000)
     } catch (err) {
       console.error('Submit error:', err)
       setError('Произошла ошибка. Попробуйте ещё раз.')
@@ -758,15 +754,18 @@ export default function SecretSantaPage() {
 
             <div className="p-6">
               {submitted ? (
-                <div className="text-center py-6">
+                <div className="text-center py-4">
                   <div className="text-6xl mb-4">🎉</div>
                   <h3 className="text-xl font-bold text-gray-800 mb-2">Спасибо!</h3>
                   <p className="text-gray-600 mb-4">
                     Ваша заявка принята. Мы свяжемся с вами в ближайшее время!
                   </p>
-                  <div className="bg-blue-50 rounded-xl p-4 text-left">
-                    <p className="text-sm text-gray-600 mb-3">
+                  <div className="bg-blue-50 rounded-xl p-4 text-left mb-4">
+                    <p className="text-sm text-gray-600 mb-2">
                       Если с вами не связались для уточнения деталей, вы можете связаться напрямую с волонтёром:
+                    </p>
+                    <p className="text-lg font-bold text-gray-800 mb-3">
+                      📞 +7 701 405 8207
                     </p>
                     <div className="flex flex-wrap gap-3">
                       <a
@@ -787,6 +786,16 @@ export default function SecretSantaPage() {
                       </a>
                     </div>
                   </div>
+                  <button
+                    onClick={() => {
+                      setShowModal(false)
+                      setSubmitted(false)
+                      setFormData({ name: '', phone: '', email: '', message: '' })
+                    }}
+                    className="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-4 rounded-xl transition-colors"
+                  >
+                    Закрыть
+                  </button>
                 </div>
               ) : (
                 <>
