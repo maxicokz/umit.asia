@@ -765,16 +765,27 @@ export default function SecretSantaPage() {
                     Ваша заявка принята. Мы свяжемся с вами в ближайшее время!
                   </p>
                   <div className="bg-blue-50 rounded-xl p-4 text-left">
-                    <p className="text-sm text-gray-600 mb-2">
+                    <p className="text-sm text-gray-600 mb-3">
                       Если с вами не связались для уточнения деталей, вы можете связаться напрямую с волонтёром:
                     </p>
-                    <a
-                      href="tel:+77014058207"
-                      className="inline-flex items-center gap-2 text-blue-600 font-semibold hover:text-blue-800"
-                    >
-                      <span>📞</span>
-                      <span>+7 701 405 8207</span>
-                    </a>
+                    <div className="flex flex-wrap gap-3">
+                      <a
+                        href="https://wa.me/77014058207"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white font-semibold px-4 py-2 rounded-lg transition-colors"
+                      >
+                        <span>💬</span>
+                        <span>WhatsApp</span>
+                      </a>
+                      <a
+                        href="tel:+77014058207"
+                        className="inline-flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white font-semibold px-4 py-2 rounded-lg transition-colors"
+                      >
+                        <span>📞</span>
+                        <span>Позвонить</span>
+                      </a>
+                    </div>
                   </div>
                 </div>
               ) : (
