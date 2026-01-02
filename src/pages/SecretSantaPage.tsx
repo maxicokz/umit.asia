@@ -11,9 +11,25 @@ interface Child {
   reserved?: boolean
 }
 
-const childrenWithDiagnosis: Child[] = []
+const childrenWithDiagnosis: Child[] = [
+  { id: 1, name: 'Мырзаева Аяулым', birthDate: '01.06.2012', note: 'Синдром Нунан', gift: 'Нарядное платье рост 164 и сладости', category: 'diagnosis' },
+  { id: 2, name: 'Абдулхамит Аманбекулы', birthDate: '01.06.2016', note: 'ЗПРР, ЗРР', gift: 'Шлем для карате и перчатки, сладости', category: 'diagnosis' },
+  { id: 3, name: 'Сағындық Мұхаммед', birthDate: '01.06.2017', note: 'Синдром Дауна', gift: 'Комбинезон зимний рост 134 и сладости', category: 'diagnosis' },
+  { id: 4, name: 'Дархан Құралай', birthDate: '01.06.2017', note: 'Эпилепсия, ЗПРР', gift: 'Куртка зимняя рост 150, зимняя обувь 35, сладости', category: 'diagnosis' },
+  { id: 5, name: 'Кенесбек Бесултан', birthDate: '01.06.2018', note: 'Аутизм', gift: 'Большую машинку и сладости', category: 'diagnosis' },
+  { id: 6, name: 'Тунгышбек Досайулы', birthDate: '01.06.2018', note: 'Аутизм', gift: 'Зимняя куртка 140 и сладости', category: 'diagnosis' },
+  { id: 7, name: 'Сайлау Мирас', birthDate: '01.06.2022', note: 'ДЦП, Гиперкинез тяжелой формы', gift: 'Слитный зимний комбинезон рост 130 и сладости', category: 'diagnosis' },
+  { id: 8, name: 'Насыбуллин Эльдар', birthDate: '01.06.2019', note: 'Аутизм', gift: 'Драконы Дневная и Ночная фурия, Фотоаппарат Botaqan litr котик', category: 'diagnosis' },
+  { id: 9, name: 'Айбол Игилик', birthDate: '01.06.2014', note: 'ДЦП, Эпилепсия', gift: 'Куртка и сапоги и сладости', category: 'diagnosis' },
+  { id: 10, name: 'Омиртас Алишер Кайрулы', birthDate: '01.06.2010', note: 'Бронхиальная астма тяжелая степень', gift: 'Уточняется', category: 'diagnosis' },
+  { id: 11, name: 'Оразбай Ақмаржан Нурлыбайқызы', birthDate: '01.06.2014', note: 'Атрезия ануса', gift: 'Спортивная одежда 150 рост', category: 'diagnosis' },
+  { id: 12, name: 'Оспиенко Ярослав Витальевич', birthDate: '01.06.2011', note: 'ДЦП, спастический тетрапарез', gift: 'Спортивный костюм Барыс 44', category: 'diagnosis' },
+  { id: 13, name: 'Жакишева Айдана', birthDate: '01.06.2015', note: 'Нуждается в помощи', gift: 'Кулек сладостей с фруктами, орехами, торт, мишка коричневый', category: 'diagnosis' },
+]
 
-const childrenFromFamilies: Child[] = []
+const childrenFromFamilies: Child[] = [
+  { id: 101, name: 'Омаров Альтаир', birthDate: '01.06.2020', note: 'Неполная семья', gift: 'Планшет', category: 'family' },
+]
 
 function calculateAge(birthDate: string): number {
   const [day, month, year] = birthDate.split('.').map(Number)
