@@ -123,12 +123,40 @@ export default function SecretSantaPage() {
   const [ageFilter, setAgeFilter] = useState<'all' | '0-3' | '4-6' | '7-10' | '11+'>('all')
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
 
-  // Moderator mode
+  // Moderator mode - check by email
   const [isModMode, setIsModMode] = useState(false)
   const [hiddenChildren, setHiddenChildren] = useState<number[]>(() => {
     const saved = localStorage.getItem('santa_hidden_children')
     return saved ? JSON.parse(saved) : []
   })
+
+  // Check if user is moderator by email
+  const MODERATOR_EMAIL = 'music_michael@bk.ru'
+
+  useEffect(() => {
+    const checkModerator = async () => {
+      if (supabase) {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user?.email === MODERATOR_EMAIL) {
+          setIsModMode(true)
+        }
+      }
+    }
+    checkModerator()
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase?.auth.onAuthStateChange((_event, session) => {
+      if (session?.user?.email === MODERATOR_EMAIL) {
+        setIsModMode(true)
+      } else {
+        setIsModMode(false)
+      }
+    }) || { data: { subscription: null } }
+
+    return () => {
+      subscription?.unsubscribe()
+    }
+  }, [])
 
   // Save hidden children to localStorage
   useEffect(() => {
@@ -141,16 +169,6 @@ export default function SecretSantaPage() {
         ? prev.filter(id => id !== childId)
         : [...prev, childId]
     )
-  }
-
-  const handleModLogin = () => {
-    const password = prompt('Введите пароль модератора:')
-    if (password === 'umit2024') {
-      setIsModMode(true)
-      alert('Режим модератора включён')
-    } else if (password) {
-      alert('Неверный пароль')
-    }
   }
 
   // SEO - set document title
@@ -850,25 +868,12 @@ export default function SecretSantaPage() {
         <p className="text-blue-200">Вопросы? Свяжитесь с нами:</p>
         <p className="font-semibold">Telegram: @marchenkokz | Email: umit@maxico.kz</p>
 
-        {/* Mod mode toggle */}
-        {isModMode ? (
+        {/* Mod panel - shows only for authorized moderator */}
+        {isModMode && (
           <div className="mt-4 p-4 bg-purple-600 rounded-lg inline-block">
             <p className="text-sm mb-2">👮 Режим модератора</p>
-            <p className="text-xs text-purple-200 mb-2">Скрыто детей: {hiddenChildren.length}</p>
-            <button
-              onClick={() => setIsModMode(false)}
-              className="text-xs bg-purple-800 hover:bg-purple-900 px-3 py-1 rounded"
-            >
-              Выйти
-            </button>
+            <p className="text-xs text-purple-200">Скрыто детей: {hiddenChildren.length}</p>
           </div>
-        ) : (
-          <button
-            onClick={handleModLogin}
-            className="mt-4 text-xs text-blue-300/50 hover:text-blue-200"
-          >
-            🔐
-          </button>
         )}
       </div>
 
