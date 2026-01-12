@@ -12,7 +12,6 @@ interface Child {
 }
 
 const childrenWithDiagnosis: Child[] = [
-  { id: 6, name: 'Тунгышбек Досайулы', birthDate: '01.06.2018', note: 'Аутизм', gift: 'Зимняя куртка 140 и сладости', category: 'diagnosis' },
   { id: 7, name: 'Сайлау Мирас', birthDate: '01.06.2022', note: 'ДЦП, Гиперкинез тяжелой формы', gift: 'Слитный зимний комбинезон рост 130 и сладости', category: 'diagnosis' },
   { id: 9, name: 'Айбол Игилик', birthDate: '01.06.2014', note: 'ДЦП, Эпилепсия', gift: 'Куртка и сапоги и сладости', category: 'diagnosis' },
   { id: 10, name: 'Омиртас Алишер Кайрулы', birthDate: '01.06.2010', note: 'Бронхиальная астма тяжелая степень', gift: 'Уточняется', category: 'diagnosis' },
