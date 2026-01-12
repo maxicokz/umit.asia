@@ -131,13 +131,13 @@ export default function SecretSantaPage() {
   })
 
   // Check if user is moderator by email
-  const MODERATOR_EMAIL = 'music_michael@bk.ru'
+  const MODERATOR_EMAILS = ['music_michael@bk.ru', 'maxmail0000@gmail.com']
 
   useEffect(() => {
     const checkModerator = async () => {
       if (supabase) {
         const { data: { user } } = await supabase.auth.getUser()
-        if (user?.email === MODERATOR_EMAIL) {
+        if (user?.email && MODERATOR_EMAILS.includes(user.email)) {
           setIsModMode(true)
         }
       }
@@ -146,7 +146,7 @@ export default function SecretSantaPage() {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase?.auth.onAuthStateChange((_event, session) => {
-      if (session?.user?.email === MODERATOR_EMAIL) {
+      if (session?.user?.email && MODERATOR_EMAILS.includes(session.user.email)) {
         setIsModMode(true)
       } else {
         setIsModMode(false)
