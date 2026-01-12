@@ -140,7 +140,11 @@ export default function SecretSantaPage() {
 
   const allChildren = [...childrenWithDiagnosis, ...childrenFromFamilies]
 
-  // Apply all filters
+  // Count children waiting for gifts
+  const waitingForGifts = allChildren.filter(c => !c.reserved).length
+  const receivedGifts = allChildren.filter(c => c.reserved).length
+
+  // Apply all filters and sort (unreserved first)
   const filteredChildren = useMemo(() => {
     return allChildren.filter(child => {
       // Category filter
@@ -178,6 +182,11 @@ export default function SecretSantaPage() {
       }
 
       return true
+    }).sort((a, b) => {
+      // Unreserved children first
+      if (a.reserved && !b.reserved) return 1
+      if (!a.reserved && b.reserved) return -1
+      return 0
     })
   }, [allChildren, categoryFilter, searchQuery, ageFilter])
 
@@ -392,17 +401,17 @@ export default function SecretSantaPage() {
           </p>
 
           <div className="mt-8 flex justify-center gap-4 flex-wrap">
+            <div className="bg-yellow-400/20 backdrop-blur-sm rounded-xl px-6 py-4 text-center border-2 border-yellow-400/50">
+              <div className="text-3xl font-bold text-yellow-300">{waitingForGifts}</div>
+              <div className="text-yellow-200 text-sm">Ждут подарков 🎁</div>
+            </div>
+            <div className="bg-green-400/20 backdrop-blur-sm rounded-xl px-6 py-4 text-center">
+              <div className="text-3xl font-bold text-green-300">{receivedGifts}</div>
+              <div className="text-green-200 text-sm">Получили подарки ✅</div>
+            </div>
             <div className="bg-white/10 backdrop-blur-sm rounded-xl px-6 py-4 text-center">
               <div className="text-3xl font-bold">{allChildren.length}</div>
-              <div className="text-blue-200 text-sm">Детей ждут чуда</div>
-            </div>
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl px-6 py-4 text-center">
-              <div className="text-3xl font-bold">{childrenWithDiagnosis.length}</div>
-              <div className="text-blue-200 text-sm">Детей с диагнозами</div>
-            </div>
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl px-6 py-4 text-center">
-              <div className="text-3xl font-bold">{childrenFromFamilies.length}</div>
-              <div className="text-blue-200 text-sm">Из многодетных семей</div>
+              <div className="text-blue-200 text-sm">Всего детей</div>
             </div>
           </div>
 
