@@ -123,6 +123,36 @@ export default function SecretSantaPage() {
   const [ageFilter, setAgeFilter] = useState<'all' | '0-3' | '4-6' | '7-10' | '11+'>('all')
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
 
+  // Moderator mode
+  const [isModMode, setIsModMode] = useState(false)
+  const [hiddenChildren, setHiddenChildren] = useState<number[]>(() => {
+    const saved = localStorage.getItem('santa_hidden_children')
+    return saved ? JSON.parse(saved) : []
+  })
+
+  // Save hidden children to localStorage
+  useEffect(() => {
+    localStorage.setItem('santa_hidden_children', JSON.stringify(hiddenChildren))
+  }, [hiddenChildren])
+
+  const toggleHideChild = (childId: number) => {
+    setHiddenChildren(prev =>
+      prev.includes(childId)
+        ? prev.filter(id => id !== childId)
+        : [...prev, childId]
+    )
+  }
+
+  const handleModLogin = () => {
+    const password = prompt('Введите пароль модератора:')
+    if (password === 'umit2024') {
+      setIsModMode(true)
+      alert('Режим модератора включён')
+    } else if (password) {
+      alert('Неверный пароль')
+    }
+  }
+
   // SEO - set document title
   useEffect(() => {
     document.title = 'Тайный Санта - Подари чудо детям | Úmit'
@@ -147,6 +177,11 @@ export default function SecretSantaPage() {
   // Apply all filters and sort (unreserved first)
   const filteredChildren = useMemo(() => {
     return allChildren.filter(child => {
+      // Hide children (unless in mod mode)
+      if (!isModMode && hiddenChildren.includes(child.id)) {
+        return false
+      }
+
       // Category filter
       if (categoryFilter !== 'all' && child.category !== categoryFilter) {
         return false
@@ -188,7 +223,7 @@ export default function SecretSantaPage() {
       if (!a.reserved && b.reserved) return -1
       return 0
     })
-  }, [allChildren, categoryFilter, searchQuery, ageFilter])
+  }, [allChildren, categoryFilter, searchQuery, ageFilter, isModMode, hiddenChildren])
 
   const handleReserve = (child: Child) => {
     setSelectedChild(child)
@@ -623,6 +658,20 @@ export default function SecretSantaPage() {
                       Стать Тайным Сантой
                     </button>
                   )}
+
+                  {/* Mod controls */}
+                  {isModMode && (
+                    <button
+                      onClick={() => toggleHideChild(child.id)}
+                      className={`w-full mt-2 py-2 px-4 rounded-xl text-sm font-semibold transition-all ${
+                        hiddenChildren.includes(child.id)
+                          ? 'bg-green-500 hover:bg-green-600 text-white'
+                          : 'bg-red-100 hover:bg-red-200 text-red-700'
+                      }`}
+                    >
+                      {hiddenChildren.includes(child.id) ? '👁 Показать' : '🙈 Скрыть'}
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
@@ -690,6 +739,18 @@ export default function SecretSantaPage() {
                         🎅 Выбрать
                       </button>
                     )}
+                    {isModMode && (
+                      <button
+                        onClick={() => toggleHideChild(child.id)}
+                        className={`py-1.5 px-2 rounded-lg text-xs font-semibold ${
+                          hiddenChildren.includes(child.id)
+                            ? 'bg-green-500 text-white'
+                            : 'bg-red-100 text-red-700'
+                        }`}
+                      >
+                        {hiddenChildren.includes(child.id) ? '👁' : '🙈'}
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -724,19 +785,32 @@ export default function SecretSantaPage() {
                     </div>
                   </div>
 
-                  <div className="col-span-2">
+                  <div className="col-span-2 flex items-center gap-2">
                     {child.reserved ? (
-                      <div className="w-full bg-gray-200 text-gray-500 font-semibold py-2 px-3 rounded-lg text-sm text-center">
+                      <div className="flex-1 bg-gray-200 text-gray-500 font-semibold py-2 px-3 rounded-lg text-sm text-center">
                         💚 Спасибо!
                       </div>
                     ) : (
                       <button
                         onClick={() => handleReserve(child)}
-                        className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold py-2 px-3 rounded-lg transition-all text-sm flex items-center justify-center gap-1"
+                        className="flex-1 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold py-2 px-3 rounded-lg transition-all text-sm flex items-center justify-center gap-1"
                       >
                         <span>🎅</span>
                         <span className="hidden lg:inline">Стать Сантой</span>
                         <span className="lg:hidden">Выбрать</span>
+                      </button>
+                    )}
+                    {isModMode && (
+                      <button
+                        onClick={() => toggleHideChild(child.id)}
+                        className={`py-2 px-2 rounded-lg text-sm font-semibold ${
+                          hiddenChildren.includes(child.id)
+                            ? 'bg-green-500 hover:bg-green-600 text-white'
+                            : 'bg-red-100 hover:bg-red-200 text-red-700'
+                        }`}
+                        title={hiddenChildren.includes(child.id) ? 'Показать' : 'Скрыть'}
+                      >
+                        {hiddenChildren.includes(child.id) ? '👁' : '🙈'}
                       </button>
                     )}
                   </div>
@@ -775,6 +849,27 @@ export default function SecretSantaPage() {
       <div className="relative z-10 py-8 text-center text-white">
         <p className="text-blue-200">Вопросы? Свяжитесь с нами:</p>
         <p className="font-semibold">Telegram: @marchenkokz | Email: umit@maxico.kz</p>
+
+        {/* Mod mode toggle */}
+        {isModMode ? (
+          <div className="mt-4 p-4 bg-purple-600 rounded-lg inline-block">
+            <p className="text-sm mb-2">👮 Режим модератора</p>
+            <p className="text-xs text-purple-200 mb-2">Скрыто детей: {hiddenChildren.length}</p>
+            <button
+              onClick={() => setIsModMode(false)}
+              className="text-xs bg-purple-800 hover:bg-purple-900 px-3 py-1 rounded"
+            >
+              Выйти
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={handleModLogin}
+            className="mt-4 text-xs text-blue-300/50 hover:text-blue-200"
+          >
+            🔐
+          </button>
+        )}
       </div>
 
       {/* Modal */}
