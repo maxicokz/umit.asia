@@ -12,9 +12,19 @@ interface Child {
 }
 
 const childrenWithDiagnosis: Child[] = [
+  { id: 1, name: 'Мырзаева Аяулым', birthDate: '01.06.2012', note: 'Синдром Нунан', gift: 'Нарядное платье рост 164 и сладости', category: 'diagnosis', reserved: true },
+  { id: 2, name: 'Абдулхамит Аманбекулы', birthDate: '01.06.2016', note: 'ЗПРР, ЗРР', gift: 'Шлем для карате и перчатки, сладости', category: 'diagnosis', reserved: true },
+  { id: 3, name: 'Сағындық Мұхаммед', birthDate: '01.06.2017', note: 'Синдром Дауна', gift: 'Комбинезон зимний рост 134 и сладости', category: 'diagnosis', reserved: true },
+  { id: 4, name: 'Дархан Құралай', birthDate: '01.06.2017', note: 'Эпилепсия, ЗПРР', gift: 'Куртка зимняя рост 150, зимняя обувь 35, сладости', category: 'diagnosis', reserved: true },
+  { id: 5, name: 'Кенесбек Бесултан', birthDate: '01.06.2018', note: 'Аутизм', gift: 'Большую машинку и сладости', category: 'diagnosis', reserved: true },
+  { id: 6, name: 'Тунгышбек Досайулы', birthDate: '01.06.2018', note: 'Аутизм', gift: 'Зимняя куртка 140 и сладости', category: 'diagnosis', reserved: true },
   { id: 7, name: 'Сайлау Мирас', birthDate: '01.06.2022', note: 'ДЦП, Гиперкинез тяжелой формы', gift: 'Слитный зимний комбинезон рост 130 и сладости', category: 'diagnosis' },
+  { id: 8, name: 'Насыбуллин Эльдар', birthDate: '01.06.2019', note: 'Аутизм', gift: 'Драконы Дневная и Ночная фурия, Фотоаппарат Botaqan litr котик', category: 'diagnosis', reserved: true },
   { id: 9, name: 'Айбол Игилик', birthDate: '01.06.2014', note: 'ДЦП, Эпилепсия', gift: 'Куртка и сапоги и сладости', category: 'diagnosis' },
   { id: 10, name: 'Омиртас Алишер Кайрулы', birthDate: '01.06.2010', note: 'Бронхиальная астма тяжелая степень', gift: 'Уточняется', category: 'diagnosis' },
+  { id: 11, name: 'Оразбай Ақмаржан Нурлыбайқызы', birthDate: '01.06.2014', note: 'Атрезия ануса', gift: 'Спортивная одежда 150 рост', category: 'diagnosis', reserved: true },
+  { id: 12, name: 'Оспиенко Ярослав Витальевич', birthDate: '01.06.2011', note: 'ДЦП, спастический тетрапарез', gift: 'Спортивный костюм Барыс 44', category: 'diagnosis', reserved: true },
+  { id: 13, name: 'Жакишева Айдана', birthDate: '01.06.2015', note: 'Нуждается в помощи', gift: 'Кулек сладостей с фруктами, орехами, торт, мишка коричневый', category: 'diagnosis', reserved: true },
 ]
 
 const childrenFromFamilies: Child[] = [
@@ -555,9 +565,9 @@ export default function SecretSantaPage() {
             {filteredChildren.map((child) => (
               <div
                 key={child.id}
-                className="bg-white rounded-2xl shadow-xl overflow-hidden transform hover:scale-105 transition-transform duration-300"
+                className={`bg-white rounded-2xl shadow-xl overflow-hidden transform hover:scale-105 transition-transform duration-300 ${child.reserved ? 'opacity-75' : ''}`}
               >
-                <div className={`h-2 ${child.category === 'diagnosis' ? 'bg-red-400' : 'bg-green-400'}`} />
+                <div className={`h-2 ${child.reserved ? 'bg-green-500' : child.category === 'diagnosis' ? 'bg-red-400' : 'bg-green-400'}`} />
                 <div className="p-6">
                   <div className="flex items-start justify-between mb-4">
                     <div>
@@ -567,9 +577,15 @@ export default function SecretSantaPage() {
                       </p>
                     </div>
                     <span className="text-3xl">
-                      {child.category === 'diagnosis' ? '💙' : '👨‍👩‍👧‍👦'}
+                      {child.reserved ? '✅' : child.category === 'diagnosis' ? '💙' : '👨‍👩‍👧‍👦'}
                     </span>
                   </div>
+
+                  {child.reserved && (
+                    <div className="mb-4 bg-green-100 text-green-800 text-sm font-semibold px-3 py-2 rounded-lg text-center">
+                      🎁 Подарок получен!
+                    </div>
+                  )}
 
                   <div className="mb-4">
                     <p className="text-sm text-gray-600 bg-gray-50 rounded-lg px-3 py-2">
@@ -578,20 +594,26 @@ export default function SecretSantaPage() {
                   </div>
 
                   <div className="bg-gradient-to-r from-red-50 to-green-50 rounded-xl p-4 mb-4">
-                    <div className="text-xs text-gray-500 mb-1">Мечтает о подарке:</div>
+                    <div className="text-xs text-gray-500 mb-1">{child.reserved ? 'Получил подарок:' : 'Мечтает о подарке:'}</div>
                     <div className="text-lg font-semibold text-gray-800 flex items-center">
                       <span className="mr-2">🎁</span>
                       {child.gift}
                     </div>
                   </div>
 
-                  <button
-                    onClick={() => handleReserve(child)}
-                    className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-bold py-3 px-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-2"
-                  >
-                    <span>🎅</span>
-                    Стать Тайным Сантой
-                  </button>
+                  {child.reserved ? (
+                    <div className="w-full bg-gray-200 text-gray-500 font-bold py-3 px-4 rounded-xl text-center">
+                      Спасибо донору! 💚
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => handleReserve(child)}
+                      className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-bold py-3 px-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-2"
+                    >
+                      <span>🎅</span>
+                      Стать Тайным Сантой
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
@@ -617,6 +639,7 @@ export default function SecretSantaPage() {
                   md:grid md:grid-cols-12 md:gap-4 md:px-6 md:py-4 md:items-center
                   hover:bg-gray-50 transition-colors
                   ${index !== filteredChildren.length - 1 ? 'md:border-b md:border-gray-100' : ''}
+                  ${child.reserved ? 'opacity-75' : ''}
                 `}
               >
                 {/* Mobile Card Layout */}
@@ -625,7 +648,7 @@ export default function SecretSantaPage() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="text-xl">
-                        {child.category === 'diagnosis' ? '💙' : '👨‍👩‍👧‍👦'}
+                        {child.reserved ? '✅' : child.category === 'diagnosis' ? '💙' : '👨‍👩‍👧‍👦'}
                       </span>
                       <span className="font-semibold text-gray-800">{child.name}</span>
                     </div>
@@ -633,6 +656,11 @@ export default function SecretSantaPage() {
                       {calculateAge(child.birthDate)}
                     </span>
                   </div>
+                  {child.reserved && (
+                    <div className="bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded text-center">
+                      🎁 Подарок получен!
+                    </div>
+                  )}
                   {/* Note */}
                   <p className="text-xs text-gray-500 line-clamp-2">{child.note}</p>
                   {/* Gift and Button row */}
@@ -641,12 +669,18 @@ export default function SecretSantaPage() {
                       <span className="text-sm">🎁</span>
                       <span className="font-medium text-gray-800 text-xs truncate">{child.gift}</span>
                     </div>
-                    <button
-                      onClick={() => handleReserve(child)}
-                      className="bg-gradient-to-r from-red-500 to-red-600 text-white font-semibold py-1.5 px-3 rounded-lg text-xs flex items-center gap-1 whitespace-nowrap"
-                    >
-                      🎅 Выбрать
-                    </button>
+                    {child.reserved ? (
+                      <span className="bg-gray-200 text-gray-500 font-semibold py-1.5 px-3 rounded-lg text-xs">
+                        💚
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => handleReserve(child)}
+                        className="bg-gradient-to-r from-red-500 to-red-600 text-white font-semibold py-1.5 px-3 rounded-lg text-xs flex items-center gap-1 whitespace-nowrap"
+                      >
+                        🎅 Выбрать
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -654,9 +688,14 @@ export default function SecretSantaPage() {
                 <div className="hidden md:contents">
                   <div className="col-span-3 flex items-center gap-3">
                     <span className="text-2xl">
-                      {child.category === 'diagnosis' ? '💙' : '👨‍👩‍👧‍👦'}
+                      {child.reserved ? '✅' : child.category === 'diagnosis' ? '💙' : '👨‍👩‍👧‍👦'}
                     </span>
-                    <div className="font-semibold text-gray-800">{child.name}</div>
+                    <div>
+                      <div className="font-semibold text-gray-800">{child.name}</div>
+                      {child.reserved && (
+                        <span className="text-xs text-green-600 font-medium">Подарок получен</span>
+                      )}
+                    </div>
                   </div>
 
                   <div className="col-span-1 text-center">
@@ -677,14 +716,20 @@ export default function SecretSantaPage() {
                   </div>
 
                   <div className="col-span-2">
-                    <button
-                      onClick={() => handleReserve(child)}
-                      className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold py-2 px-3 rounded-lg transition-all text-sm flex items-center justify-center gap-1"
-                    >
-                      <span>🎅</span>
-                      <span className="hidden lg:inline">Стать Сантой</span>
-                      <span className="lg:hidden">Выбрать</span>
-                    </button>
+                    {child.reserved ? (
+                      <div className="w-full bg-gray-200 text-gray-500 font-semibold py-2 px-3 rounded-lg text-sm text-center">
+                        💚 Спасибо!
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => handleReserve(child)}
+                        className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold py-2 px-3 rounded-lg transition-all text-sm flex items-center justify-center gap-1"
+                      >
+                        <span>🎅</span>
+                        <span className="hidden lg:inline">Стать Сантой</span>
+                        <span className="lg:hidden">Выбрать</span>
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
