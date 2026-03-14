@@ -47,6 +47,7 @@ export default function WishTreePage() {
   const [submitted, setSubmitted] = useState(false)
   const [loading, setLoading] = useState(false)
   const [filter, setFilter] = useState<'all'|'available'|'done'>('all')
+  const [ageFilter, setAgeFilter] = useState<'all'|'3-6'|'7-11'|'12-15'>('all')
 
   useEffect(() => {
     if (!isDemoMode) {
@@ -59,7 +60,8 @@ export default function WishTreePage() {
   const filtered = children.filter(c => {
     const matchSearch = c.name.toLowerCase().includes(search.toLowerCase()) || c.wish.toLowerCase().includes(search.toLowerCase())
     const matchFilter = filter === 'all' || (filter === 'available' && !reserved.has(c.id)) || (filter === 'done' && reserved.has(c.id))
-    return matchSearch && matchFilter
+    const matchAge = ageFilter === 'all' || (ageFilter === '3-6' && c.age >= 3 && c.age <= 6) || (ageFilter === '7-11' && c.age >= 7 && c.age <= 11) || (ageFilter === '12-15' && c.age >= 12 && c.age <= 15)
+    return matchSearch && matchFilter && matchAge
   })
 
   const handleReserveClick = (e: React.MouseEvent, child: Child) => {
@@ -125,11 +127,19 @@ export default function WishTreePage() {
           <input type="text" placeholder="🔍 Поиск по имени или желанию..."
             value={search} onChange={e=>setSearch(e.target.value)}
             className="w-full px-4 py-2.5 rounded-xl text-sm bg-gray-50 border border-gray-100 focus:outline-none focus:ring-2 focus:ring-green-400 mb-3"/>
-          <div className="flex gap-2">
+          <div className="flex gap-2 mb-2">
             {(['all','available','done'] as const).map(f=>(
               <button key={f} onClick={()=>setFilter(f)}
                 className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-all ${filter===f?'bg-green-600 text-white':'bg-gray-50 text-gray-500 hover:bg-gray-100'}`}>
                 {f==='all'?`Все (${children.length})`:f==='available'?`✅ Свободные (${available})`:`🎁 Исполненные (${done})`}
+              </button>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            {([['all','👶 Любой возраст'],['3-6','3–6 лет'],['7-11','7–11 лет'],['12-15','12–15 лет']] as const).map(([f,label])=>(
+              <button key={f} onClick={()=>setAgeFilter(f)}
+                className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-all ${ageFilter===f?'bg-emerald-500 text-white':'bg-gray-50 text-gray-500 hover:bg-gray-100'}`}>
+                {label}
               </button>
             ))}
           </div>
