@@ -27,9 +27,15 @@ if (import.meta.env.DEV) {
 export const isSupabaseConfigured = !!(supabaseUrl && supabaseAnonKey)
 
 // Create Supabase client (only if configured)
-export const supabase = isSupabaseConfigured
-  ? createClient<Database>(supabaseUrl, supabaseAnonKey)
-  : null
+let supabaseClient: any = null
+try {
+  if (isSupabaseConfigured) {
+    supabaseClient = createClient<Database>(supabaseUrl, supabaseAnonKey)
+  }
+} catch (e) {
+  console.warn('Supabase client init failed:', e)
+}
+export const supabase = supabaseClient
 
 // Demo mode flag
 export const isDemoMode = !isSupabaseConfigured
