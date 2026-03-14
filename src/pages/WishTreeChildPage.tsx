@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { supabase, isDemoMode } from '../services/supabase'
 import { useParams, Link } from 'react-router-dom'
 
 interface Child {
@@ -56,9 +57,18 @@ export default function WishTreeChildPage() {
   const { id } = useParams<{ id: string }>()
   const child = children.find(c => c.id === Number(id))
 
+  const [isReserved, setIsReserved] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState<DonorForm>({ name: '', phone: '', message: '' })
   const [submitted, setSubmitted] = useState(false)
+
+  useEffect(() => {
+    if (!isDemoMode && child) {
+      supabase.from('wish_reservations').select('child_id').eq('child_id', child.id).then(({ data }) => {
+        if (data && data.length > 0) setIsReserved(true)
+      })
+    }
+  }, [child])
 
   if (!child) {
     return (
@@ -84,6 +94,10 @@ export default function WishTreeChildPage() {
         body: JSON.stringify({ chat_id: chatId, text: msg, parse_mode: 'Markdown' })
       }).catch(console.error)
     }
+    if (!isDemoMode) {
+      supabase.from('wish_reservations').upsert({ child_id: child.id, donor_name: form.name, donor_phone: form.phone }).catch(console.error)
+    }
+    setIsReserved(true)
     setSubmitted(true)
   }
 
