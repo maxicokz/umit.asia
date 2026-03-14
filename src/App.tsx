@@ -20,6 +20,7 @@ const VolunteersPage = lazy(() => import('./pages/VolunteersPage'))
 const MapPage = lazy(() => import('./pages/MapPage'))
 const RegistryPage = lazy(() => import('./pages/RegistryPage'))
 const SecretSantaPage = lazy(() => import('./pages/SecretSantaPage'))
+const WishTreePage = lazy(() => import('./pages/WishTreePage'))
 const BeneficiaryDashboard = lazy(() => import('./pages/BeneficiaryDashboard'))
 const DonorDashboard = lazy(() => import('./pages/DonorDashboard'))
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'))
@@ -65,6 +66,7 @@ function App() {
           <Route path="volunteers" element={<VolunteersPage />} />
           <Route path="map" element={<MapPage />} />
           <Route path="secret-santa" element={<SecretSantaPage />} />
+          <Route path="wish-tree" element={<WishTreePage />} />
 
           {/* Role-based protected routes */}
           <Route
