@@ -75,7 +75,8 @@ export default function WishTreePage() {
     const botToken = (import.meta as any).env?.VITE_TELEGRAM_BOT_TOKEN
     const chatId = (import.meta as any).env?.VITE_TELEGRAM_CHAT_ID
     if (botToken && chatId && selected) {
-      const msg = `🌳 *ДЕРЕВО ЖЕЛАНИЙ*\n\n👤 ${selected.name}, ${selected.age} лет\n🎁 ${selected.wish}\n📋 ${selected.details || '—'}\n\n💝 Благотворитель: ${form.name}\n📞 ${form.phone}\n💬 ${form.message || '—'}`
+      const details2 = selected.details ? `\n📋 ${selected.details}` : ''
+      const msg = `🌳 *ДЕРЕВО ЖЕЛАНИЙ*\n\n👤 ${selected.name}, ${selected.age} лет\n🎁 ${selected.wish}${details2}\n\n💝 Благотворитель: ${form.name}\n📞 ${form.phone}${form.message ? '\n💬 ' + form.message : ''}`
       fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ chat_id: chatId, text: msg, parse_mode: 'Markdown' })
