@@ -150,13 +150,14 @@ export default function WishTreePage() {
           {filtered.map(child => {
             const isReserved = reserved.has(child.id)
             return (
-              <Link key={child.id} to={`/wish-tree/${child.id}`}
-                className={`group block bg-white rounded-2xl overflow-hidden shadow-sm border transition-all duration-200 ${isReserved?'border-gray-100 opacity-65':'border-green-100 hover:shadow-xl hover:-translate-y-1 hover:border-green-300 cursor-pointer'}`}>
+              <div key={child.id}
+                className={`group bg-white rounded-2xl overflow-hidden shadow-sm border transition-all duration-200 ${isReserved?'border-gray-100 opacity-65':'border-green-100 hover:shadow-xl hover:border-green-300'}`}>
 
                 {/* Top color bar */}
                 <div className={`h-1 ${isReserved?'bg-gray-200':'bg-gradient-to-r from-green-400 to-emerald-500'}`}/>
 
-                <div className="p-5">
+                {/* Clickable area → child page */}
+                <Link to={`/wish-tree/${child.id}`} className="block p-5 pb-3">
                   <div className="flex items-center justify-between mb-4">
                     <div style={{background:isReserved?'#f3f4f6':'linear-gradient(135deg,#dcfce7,#bbf7d0)',fontSize:28,width:52,height:52}} className="rounded-2xl flex items-center justify-center flex-shrink-0">
                       {child.emoji}
@@ -165,11 +166,9 @@ export default function WishTreePage() {
                       {isReserved?'✓ Исполнено':'Свободно'}
                     </span>
                   </div>
-
                   <div className="font-bold text-gray-800 text-base leading-tight">{child.name}</div>
                   <div className="text-xs text-gray-400 mb-3">{child.age} {ageWord(child.age)}</div>
-
-                  <div className="bg-gray-50 rounded-xl p-3 mb-4">
+                  <div className="bg-gray-50 rounded-xl p-3">
                     <div style={{fontSize:11}} className="text-gray-400 uppercase tracking-wide font-semibold mb-1">Мечта</div>
                     <div className="text-sm text-gray-700 font-medium leading-snug">{child.wish}</div>
                     {child.details && !child.details.startsWith('http') && (
@@ -179,13 +178,16 @@ export default function WishTreePage() {
                       <div className="text-xs text-blue-500 mt-1">🛒 Посмотреть на Kaspi</div>
                     )}
                   </div>
+                </Link>
 
-                  <button onClick={e=>handleReserveClick(e,child)} disabled={isReserved}
+                {/* Button outside Link - no conflict */}
+                <div className="px-5 pb-5 pt-3">
+                  <button onClick={()=>!isReserved&&(setSelected(child),setSubmitted(false),setForm({name:'',phone:'',message:''}))} disabled={isReserved}
                     className={`w-full py-3 rounded-xl text-sm font-bold transition-all ${isReserved?'bg-gray-100 text-gray-400 cursor-not-allowed':'bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700 shadow-sm active:scale-95'}`}>
                     {isReserved?'Желание уже исполнено':'💝 Исполнить желание'}
                   </button>
                 </div>
-              </Link>
+              </div>
             )
           })}
         </div>
