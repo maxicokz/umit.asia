@@ -101,15 +101,19 @@ export default function WishTreeChildPage() {
     e.preventDefault()
     if (!child) return
     setSubmitting(true)
-    if (!isDemoMode) {
-      await supabase.from('wish_reservations').upsert({ child_id: child.id, donor_name: form.name, donor_phone: form.phone })
-    }
+    // 1. Telegram FIRST — guaranteed delivery
     const botToken = (import.meta as any).env?.VITE_TELEGRAM_BOT_TOKEN
     const chatId = (import.meta as any).env?.VITE_TELEGRAM_CHAT_ID
     if (botToken && chatId) {
       const det = child.details && !child.details.startsWith('http') ? `\n📋 ${child.details}` : ''
       const msg = `🌳 *ДЕРЕВО ЖЕЛАНИЙ — ЗАЯВКА*\n\n👤 ${child.name}, ${child.age} лет\n🎁 ${child.wish}${det}\n\n💝 Благотворитель: ${form.name}\n📞 ${form.phone}${form.message ? '\n💬 ' + form.message : ''}`
-      fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: chatId, text: msg, parse_mode: 'Markdown' }) }).catch(console.error)
+      await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: chatId, text: msg, parse_mode: 'Markdown' }) }).catch(console.error)
+    }
+    // 2. Supabase AFTER — save to DB
+    if (!isDemoMode && supabase) {
+      try {
+        await supabase.from('wish_reservations').insert({ child_id: child.id, donor_name: form.name, donor_phone: form.phone })
+      } catch (e) { console.warn('DB save failed:', e) }
     }
     setIsReserved(true); setSubmitting(false); setSubmitted(true)
     launchConfetti()
