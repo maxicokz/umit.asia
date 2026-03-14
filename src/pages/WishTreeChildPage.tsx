@@ -4,7 +4,7 @@ import { supabase, isDemoMode } from '../services/supabase'
 
 interface Child { id: number; name: string; age: number; wish: string; details: string; emoji: string }
 
-const children: Child[] = [
+const CHILDREN: Child[] = [
   { id: 1, name: 'Болдарева Любовь', age: 4, wish: 'Магнитный танграм', details: 'https://l.kaspi.kz/shop/GkpuoQ9VjZ99etv', emoji: '🧸' },
   { id: 2, name: 'Болдарева Людмила', age: 7, wish: 'Кроссовки', details: 'Размер 31', emoji: '👟' },
   { id: 3, name: 'Болдарева Вероника', age: 10, wish: 'Спортивный костюм', details: 'Размер 40, рост 146-150', emoji: '🏃' },
@@ -37,34 +37,70 @@ const children: Child[] = [
   { id: 30, name: 'Сардирдинов Мухамадислам', age: 13, wish: 'Штаны или белые кроссовки', details: 'Штаны р.42; кроссовки 37-38', emoji: '👟' },
 ]
 
-interface DonorForm { name: string; phone: string; message: string }
+function launchConfetti() {
+  const canvas = document.createElement('canvas')
+  canvas.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999'
+  document.body.appendChild(canvas)
+  const ctx = canvas.getContext('2d')!
+  canvas.width = window.innerWidth; canvas.height = window.innerHeight
+  const pieces = Array.from({length: 120}, () => ({
+    x: Math.random() * canvas.width, y: -20,
+    w: 8 + Math.random() * 8, h: 4 + Math.random() * 4,
+    color: ['#4ade80','#22c55e','#fbbf24','#f472b6','#60a5fa','#a78bfa'][Math.floor(Math.random()*6)],
+    speed: 3 + Math.random() * 4, angle: Math.random() * Math.PI * 2,
+    spin: (Math.random() - 0.5) * 0.3, wobble: Math.random() * 0.1,
+  }))
+  let frame = 0
+  const animate = () => {
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    pieces.forEach(p => {
+      p.y += p.speed; p.angle += p.spin; p.x += Math.sin(p.wobble * frame) * 1.5
+      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.angle)
+      ctx.fillStyle = p.color; ctx.globalAlpha = Math.max(0, 1 - p.y / canvas.height)
+      ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h); ctx.restore()
+    })
+    frame++
+    if (frame < 120) requestAnimationFrame(animate)
+    else canvas.remove()
+  }
+  animate()
+}
+
+const ageWord = (n: number) => n === 1 ? 'год' : n < 5 ? 'года' : 'лет'
 
 export default function WishTreeChildPage() {
   const { id } = useParams<{ id: string }>()
-  const child = children.find(c => c.id === Number(id))
+  const child = CHILDREN.find(c => c.id === Number(id))
   const [isReserved, setIsReserved] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState<DonorForm>({ name: '', phone: '', message: '' })
+  const [form, setForm] = useState({ name: '', phone: '', message: '' })
   const [submitted, setSubmitted] = useState(false)
-  const [loading, setLoading] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
   const [copied, setCopied] = useState(false)
 
   useEffect(() => {
+    window.scrollTo(0, 0)
     if (!isDemoMode && child) {
-      supabase.from('wish_reservations').select('child_id').eq('child_id', child.id).then(({ data }) => {
-        if (data && data.length > 0) setIsReserved(true)
-      })
-    }
+      supabase.from('wish_reservations').select('child_id').eq('child_id', child.id)
+        .then(({ data }) => { if (data && data.length > 0) setIsReserved(true); setLoading(false) })
+    } else { setLoading(false) }
   }, [child])
 
-  const handleCopy = () => {
-    navigator.clipboard?.writeText(window.location.href).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000) })
+  const handleShare = () => {
+    const url = window.location.href
+    const title = `Помоги исполнить желание ${child?.name} — ${child?.wish}`
+    if (navigator.share) {
+      navigator.share({ url, title }).catch(() => {})
+    } else {
+      navigator.clipboard?.writeText(url).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000) })
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!child) return
-    setLoading(true)
+    setSubmitting(true)
     if (!isDemoMode) {
       await supabase.from('wish_reservations').upsert({ child_id: child.id, donor_name: form.name, donor_phone: form.phone })
     }
@@ -75,11 +111,12 @@ export default function WishTreeChildPage() {
       const msg = `🌳 *ДЕРЕВО ЖЕЛАНИЙ — ЗАЯВКА*\n\n👤 ${child.name}, ${child.age} лет\n🎁 ${child.wish}${det}\n\n💝 Благотворитель: ${form.name}\n📞 ${form.phone}${form.message ? '\n💬 ' + form.message : ''}`
       fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: chatId, text: msg, parse_mode: 'Markdown' }) }).catch(console.error)
     }
-    setIsReserved(true); setLoading(false); setSubmitted(true)
+    setIsReserved(true); setSubmitting(false); setSubmitted(true)
+    launchConfetti()
   }
 
   if (!child) return (
-    <div className="min-h-screen flex items-center justify-center bg-green-50">
+    <div className="min-h-screen flex items-center justify-center" style={{background:'linear-gradient(135deg,#f0fdf4,#dcfce7)'}}>
       <div className="text-center p-8">
         <div style={{fontSize:64}} className="mb-4">🌳</div>
         <h1 className="text-xl font-bold text-gray-700 mb-3">Карточка не найдена</h1>
@@ -88,113 +125,140 @@ export default function WishTreeChildPage() {
     </div>
   )
 
-  const ageWord = (n: number) => n === 1 ? 'год' : n < 5 ? 'года' : 'лет'
+  const prev = CHILDREN.find(c => c.id === child.id - 1)
+  const next = CHILDREN.find(c => c.id === child.id + 1)
 
   return (
     <div className="min-h-screen" style={{background:'linear-gradient(160deg,#f0fdf4 0%,#dcfce7 60%,#f0fdf4 100%)'}}>
+      <style>{`@keyframes fadeIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}.fade-in{animation:fadeIn 0.4s ease both}`}</style>
 
-      {/* Back nav */}
+      {/* Back */}
       <div className="max-w-lg mx-auto px-4 pt-5 pb-2">
-        <Link to="/wish-tree" style={{color:'#16a34a'}} className="flex items-center gap-1.5 text-sm font-medium hover:underline">
-          <span>←</span><span>Все желания</span>
+        <Link to="/wish-tree" style={{color:'#16a34a'}} className="inline-flex items-center gap-1.5 text-sm font-semibold hover:underline">
+          ← Все желания
         </Link>
       </div>
 
-      <div className="max-w-lg mx-auto px-4 pb-10">
+      <div className="max-w-lg mx-auto px-4 pb-10 fade-in">
+
         {/* MAIN CARD */}
-        <div className="bg-white rounded-3xl overflow-hidden shadow-xl border border-green-100">
+        <div className="bg-white rounded-3xl overflow-hidden shadow-2xl border border-green-100">
 
-          {/* Hero section */}
-          <div style={{background:'linear-gradient(135deg,#14532d 0%,#166534 50%,#15803d 100%)'}} className="text-white text-center py-10 px-6 relative">
-            {/* Decorative circles */}
-            <div style={{position:'absolute',top:-30,right:-30,width:120,height:120,borderRadius:'50%',background:'rgba(255,255,255,0.05)'}}/>
-            <div style={{position:'absolute',bottom:-20,left:-20,width:80,height:80,borderRadius:'50%',background:'rgba(255,255,255,0.05)'}}/>
+          {/* Hero */}
+          <div style={{background:'linear-gradient(135deg,#14532d 0%,#166534 60%,#15803d 100%)',position:'relative',overflow:'hidden'}} className="text-white text-center py-10 px-6">
+            {/* Decorative blobs */}
+            <div style={{position:'absolute',top:-40,right:-40,width:140,height:140,borderRadius:'50%',background:'rgba(255,255,255,0.06)'}}/>
+            <div style={{position:'absolute',bottom:-30,left:-30,width:100,height:100,borderRadius:'50%',background:'rgba(255,255,255,0.06)'}}/>
+            <div style={{position:'absolute',top:20,left:20,width:60,height:60,borderRadius:'50%',background:'rgba(255,255,255,0.04)'}}/>
 
-            <div style={{fontSize:72,lineHeight:1,position:'relative'}} className="mb-4">{child.emoji}</div>
-            <h1 className="text-2xl font-black mb-1 relative">{child.name}</h1>
-            <div style={{color:'rgba(255,255,255,0.7)'}} className="text-sm relative">{child.age} {ageWord(child.age)}</div>
-
-            {isReserved && (
-              <div style={{background:'rgba(255,255,255,0.2)',backdropFilter:'blur(8px)'}} className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-semibold mt-3">
-                ✓ Желание исполнено
+            {/* Status badge */}
+            {!loading && isReserved && (
+              <div style={{position:'absolute',top:16,right:16,background:'rgba(255,255,255,0.2)',backdropFilter:'blur(8px)',border:'1px solid rgba(255,255,255,0.3)'}} className="px-3 py-1 rounded-full text-xs font-bold">
+                ✓ Исполнено
               </div>
             )}
+
+            <div style={{fontSize:76,lineHeight:1,filter:'drop-shadow(0 4px 16px rgba(0,0,0,0.25))',position:'relative'}} className="mb-4">{child.emoji}</div>
+            <h1 style={{position:'relative'}} className="text-2xl font-black mb-1">{child.name}</h1>
+            <div style={{color:'rgba(255,255,255,0.65)',position:'relative'}} className="text-sm">{child.age} {ageWord(child.age)}</div>
+
+            {/* Child number */}
+            <div style={{position:'absolute',bottom:12,right:16,color:'rgba(255,255,255,0.3)',fontSize:11,fontWeight:'bold'}}>
+              #{child.id} из 30
+            </div>
           </div>
 
-          {/* Wish block */}
+          {/* Content */}
           <div className="p-6">
-            <div style={{background:'linear-gradient(135deg,#f0fdf4,#dcfce7)'}} className="rounded-2xl p-5 mb-5 text-center border border-green-100">
-              <div style={{fontSize:11,color:'#16a34a'}} className="font-black uppercase tracking-widest mb-2">Желание ребёнка</div>
-              <div className="text-lg font-bold text-gray-800 leading-snug mb-2">{child.wish}</div>
+
+            {/* Wish block */}
+            <div style={{background:'linear-gradient(135deg,#f0fdf4,#dcfce7)',border:'1px solid #bbf7d0'}} className="rounded-2xl p-5 mb-5 text-center">
+              <div style={{fontSize:10,letterSpacing:'0.12em',color:'#16a34a'}} className="font-black uppercase mb-2">Желание ребёнка</div>
+              <div className="text-xl font-black text-gray-800 leading-snug mb-3">{child.wish}</div>
               {child.details && !child.details.startsWith('http') && (
-                <div className="text-sm text-gray-500 bg-white rounded-xl px-3 py-2 inline-block">{child.details}</div>
+                <div style={{background:'white',border:'1px solid #dcfce7'}} className="text-sm text-gray-500 rounded-xl px-4 py-2 inline-block">{child.details}</div>
               )}
               {child.details && child.details.startsWith('http') && (
                 <a href={child.details} target="_blank" rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-sm font-semibold text-blue-600 bg-blue-50 border border-blue-100 rounded-xl px-4 py-2 hover:bg-blue-100 transition-colors">
+                  style={{background:'white',border:'1px solid #bfdbfe'}} className="inline-flex items-center gap-2 text-sm font-bold text-blue-600 rounded-xl px-4 py-2 hover:bg-blue-50 transition-colors">
                   🛒 Посмотреть на Kaspi →
                 </a>
               )}
             </div>
 
-            <div style={{fontSize:11,color:'#9ca3af'}} className="text-center mb-5">Центр поддержки детей акимата города Астана</div>
+            <div style={{fontSize:11,color:'#9ca3af',textAlign:'center'}} className="mb-5">Центр поддержки детей акимата города Астана</div>
 
             {/* CTA */}
-            {!submitted ? (
+            {loading ? (
+              <div className="h-14 bg-gray-100 rounded-2xl animate-pulse"/>
+            ) : !submitted ? (
               !showForm ? (
                 <button onClick={() => !isReserved && setShowForm(true)} disabled={isReserved}
-                  className={`w-full py-4 rounded-2xl text-base font-black transition-all ${isReserved?'bg-gray-100 text-gray-400 cursor-not-allowed':'bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700 shadow-lg shadow-green-200 active:scale-95'}`}>
+                  style={!isReserved?{background:'linear-gradient(135deg,#22c55e,#16a34a)',boxShadow:'0 6px 20px rgba(34,197,94,0.4)'}:{background:'#f3f4f6'}}
+                  className={`w-full py-4 rounded-2xl text-base font-black transition-all ${isReserved?'text-gray-400 cursor-not-allowed':'text-white active:scale-95 hover:opacity-90'}`}>
                   {isReserved ? '✓ Желание уже исполнено' : '💝 Исполнить желание'}
                 </button>
               ) : (
-                <form onSubmit={handleSubmit} className="space-y-3">
-                  <div style={{fontSize:13,color:'#6b7280'}} className="text-center mb-1">Оставьте контакты — с вами свяжутся</div>
-                  <input required type="text" placeholder="Ваше имя *" value={form.name} onChange={e=>setForm({...form,name:e.target.value})}
-                    className="w-full border border-gray-200 rounded-2xl px-4 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 bg-gray-50"/>
-                  <input required type="tel" placeholder="Номер телефона *" value={form.phone} onChange={e=>setForm({...form,phone:e.target.value})}
-                    className="w-full border border-gray-200 rounded-2xl px-4 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 bg-gray-50"/>
-                  <textarea placeholder="Сообщение (по желанию)" value={form.message} onChange={e=>setForm({...form,message:e.target.value})} rows={2}
-                    className="w-full border border-gray-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 bg-gray-50 resize-none"/>
-                  <div className="flex gap-3">
-                    <button type="button" onClick={()=>setShowForm(false)} className="flex-1 py-3.5 border border-gray-200 rounded-2xl text-sm text-gray-600 font-semibold hover:bg-gray-50">Назад</button>
-                    <button type="submit" disabled={loading} className="flex-1 py-3.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-2xl text-sm font-black disabled:opacity-50 shadow-sm">
-                      {loading?'...':'Подтвердить ✓'}
-                    </button>
-                  </div>
-                </form>
+                <div style={{animation:'fadeIn 0.3s ease'}}>
+                  <p className="text-sm text-gray-500 text-center mb-4">Оставьте контакты — с вами свяжутся</p>
+                  <form onSubmit={handleSubmit} className="space-y-3">
+                    <input required type="text" placeholder="Ваше имя *" value={form.name} onChange={e=>setForm({...form,name:e.target.value})}
+                      className="w-full border border-gray-200 rounded-2xl px-4 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 bg-gray-50"/>
+                    <input required type="tel" placeholder="Номер телефона *" value={form.phone} onChange={e=>setForm({...form,phone:e.target.value})}
+                      className="w-full border border-gray-200 rounded-2xl px-4 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 bg-gray-50"/>
+                    <textarea placeholder="Сообщение (необязательно)" value={form.message} onChange={e=>setForm({...form,message:e.target.value})} rows={2}
+                      className="w-full border border-gray-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 bg-gray-50 resize-none"/>
+                    <div className="flex gap-3">
+                      <button type="button" onClick={()=>setShowForm(false)} className="flex-1 py-3.5 border border-gray-200 rounded-2xl text-sm text-gray-600 font-semibold hover:bg-gray-50">Назад</button>
+                      <button type="submit" disabled={submitting}
+                        style={{background:'linear-gradient(135deg,#22c55e,#16a34a)',boxShadow:'0 4px 12px rgba(34,197,94,0.35)'}}
+                        className="flex-1 py-3.5 text-white rounded-2xl text-sm font-black disabled:opacity-50">
+                        {submitting?'Отправляем...':'Подтвердить ✓'}
+                      </button>
+                    </div>
+                  </form>
+                </div>
               )
             ) : (
-              <div className="text-center py-6">
-                <div style={{background:'linear-gradient(135deg,#dcfce7,#bbf7d0)',fontSize:48,width:80,height:80}} className="rounded-full flex items-center justify-center mx-auto mb-4">🌟</div>
+              <div className="text-center py-4" style={{animation:'fadeIn 0.4s ease'}}>
+                <div style={{background:'linear-gradient(135deg,#dcfce7,#bbf7d0)',fontSize:52,width:88,height:88,borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 16px',boxShadow:'0 8px 24px rgba(34,197,94,0.3)'}}>🌟</div>
                 <h2 className="text-xl font-black text-gray-800 mb-2">Спасибо!</h2>
-                <p className="text-sm text-gray-500">С вами свяжутся для передачи подарка.<br/>Вы делаете этот мир добрее!</p>
+                <p className="text-sm text-gray-500 leading-relaxed">С вами свяжутся для передачи подарка.<br/>Вы делаете мир добрее! 💚</p>
               </div>
             )}
           </div>
         </div>
 
-        {/* Share block */}
-        <div className="mt-4 bg-white rounded-2xl border border-gray-100 shadow-sm p-4 text-center">
-          <div style={{fontSize:12,color:'#9ca3af'}} className="mb-3">Поделитесь — возможно кто-то из ваших друзей исполнит это желание</div>
-          <button onClick={handleCopy}
-            className={`w-full py-3 rounded-xl text-sm font-semibold transition-all border ${copied?'bg-green-50 text-green-600 border-green-200':'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'}`}>
-            {copied ? '✓ Ссылка скопирована!' : '📋 Скопировать ссылку'}
+        {/* SHARE CARD */}
+        <div className="mt-4 bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+          <div style={{fontSize:12,color:'#9ca3af',textAlign:'center',marginBottom:12}}>
+            Поделитесь — пусть мечта ребёнка исполнится быстрее
+          </div>
+          <button onClick={handleShare}
+            style={copied?{background:'#f0fdf4',border:'1px solid #bbf7d0',color:'#16a34a'}:{background:'#f9fafb',border:'1px solid #e5e7eb',color:'#374151'}}
+            className="w-full py-3 rounded-xl text-sm font-bold transition-all hover:opacity-90 active:scale-95">
+            {copied ? '✓ Ссылка скопирована!' : navigator.share ? '📤 Поделиться' : '📋 Скопировать ссылку'}
           </button>
         </div>
 
-        {/* Nav prev/next */}
-        <div className="mt-4 flex gap-3">
-          {child.id > 1 && (
-            <Link to={`/wish-tree/${child.id-1}`} className="flex-1 py-3 bg-white border border-gray-100 rounded-xl text-sm text-gray-500 text-center hover:bg-gray-50 shadow-sm">
-              ← {children[child.id-2].name.split(' ')[0]}
+        {/* PREV / NEXT */}
+        <div className="mt-4 grid grid-cols-2 gap-3">
+          {prev ? (
+            <Link to={`/wish-tree/${prev.id}`} className="bg-white border border-gray-100 rounded-2xl p-3 shadow-sm hover:shadow-md hover:border-green-200 transition-all text-left">
+              <div style={{fontSize:10,color:'#9ca3af',marginBottom:4}}>← Предыдущий</div>
+              <div style={{fontSize:18}} className="mb-1">{prev.emoji}</div>
+              <div className="text-xs font-bold text-gray-700 leading-tight">{prev.name.split(' ')[0]}</div>
             </Link>
-          )}
-          {child.id < 30 && (
-            <Link to={`/wish-tree/${child.id+1}`} className="flex-1 py-3 bg-white border border-gray-100 rounded-xl text-sm text-gray-500 text-center hover:bg-gray-50 shadow-sm">
-              {children[child.id].name.split(' ')[0]} →
+          ) : <div/>}
+          {next ? (
+            <Link to={`/wish-tree/${next.id}`} className="bg-white border border-gray-100 rounded-2xl p-3 shadow-sm hover:shadow-md hover:border-green-200 transition-all text-right">
+              <div style={{fontSize:10,color:'#9ca3af',marginBottom:4}}>Следующий →</div>
+              <div style={{fontSize:18}} className="mb-1">{next.emoji}</div>
+              <div className="text-xs font-bold text-gray-700 leading-tight">{next.name.split(' ')[0]}</div>
             </Link>
-          )}
+          ) : <div/>}
         </div>
+
       </div>
     </div>
   )

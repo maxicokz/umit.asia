@@ -1,12 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase, isDemoMode } from '../services/supabase'
 
-interface Child {
-  id: number; name: string; age: number; wish: string; details: string; emoji: string
-}
+interface Child { id: number; name: string; age: number; wish: string; details: string; emoji: string }
 
-const children: Child[] = [
+const CHILDREN: Child[] = [
   { id: 1, name: 'Болдарева Любовь', age: 4, wish: 'Магнитный танграм', details: 'https://l.kaspi.kz/shop/GkpuoQ9VjZ99etv', emoji: '🧸' },
   { id: 2, name: 'Болдарева Людмила', age: 7, wish: 'Кроссовки', details: 'Размер 31', emoji: '👟' },
   { id: 3, name: 'Болдарева Вероника', age: 10, wish: 'Спортивный костюм', details: 'Размер 40, рост 146-150', emoji: '🏃' },
@@ -39,41 +37,107 @@ const children: Child[] = [
   { id: 30, name: 'Сардирдинов Мухамадислам', age: 13, wish: 'Штаны или белые кроссовки', details: 'Штаны р.42; кроссовки 37-38', emoji: '👟' },
 ]
 
+// Confetti
+function launchConfetti() {
+  const canvas = document.createElement('canvas')
+  canvas.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999'
+  document.body.appendChild(canvas)
+  const ctx = canvas.getContext('2d')!
+  canvas.width = window.innerWidth; canvas.height = window.innerHeight
+  const pieces = Array.from({length: 120}, () => ({
+    x: Math.random() * canvas.width, y: -20,
+    w: 8 + Math.random() * 8, h: 4 + Math.random() * 4,
+    color: ['#4ade80','#22c55e','#fbbf24','#f472b6','#60a5fa','#a78bfa'][Math.floor(Math.random()*6)],
+    speed: 3 + Math.random() * 4, angle: Math.random() * Math.PI * 2,
+    spin: (Math.random() - 0.5) * 0.3, wobble: Math.random() * 0.1,
+  }))
+  let frame = 0
+  const animate = () => {
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    pieces.forEach(p => {
+      p.y += p.speed; p.angle += p.spin; p.x += Math.sin(p.wobble * frame) * 1.5
+      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.angle)
+      ctx.fillStyle = p.color; ctx.globalAlpha = Math.max(0, 1 - p.y / canvas.height)
+      ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h); ctx.restore()
+    })
+    frame++
+    if (frame < 120) requestAnimationFrame(animate)
+    else canvas.remove()
+  }
+  animate()
+}
+
+const ageWord = (n: number) => n === 1 ? 'год' : n < 5 ? 'года' : 'лет'
+
+function SkeletonCard() {
+  return (
+    <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 animate-pulse">
+      <div className="h-1 bg-gray-100"/>
+      <div className="p-5">
+        <div className="flex items-center justify-between mb-4">
+          <div className="w-12 h-12 bg-gray-100 rounded-2xl"/>
+          <div className="w-20 h-6 bg-gray-100 rounded-full"/>
+        </div>
+        <div className="h-4 bg-gray-100 rounded mb-2 w-3/4"/>
+        <div className="h-3 bg-gray-100 rounded mb-4 w-1/4"/>
+        <div className="h-16 bg-gray-100 rounded-xl mb-4"/>
+        <div className="h-10 bg-gray-100 rounded-xl"/>
+      </div>
+    </div>
+  )
+}
+
 export default function WishTreePage() {
   const [reserved, setReserved] = useState<Set<number>>(new Set())
+  const [loadingDB, setLoadingDB] = useState(true)
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState<Child | null>(null)
   const [form, setForm] = useState({ name: '', phone: '', message: '' })
   const [submitted, setSubmitted] = useState(false)
-  const [loading, setLoading] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
   const [filter, setFilter] = useState<'all'|'available'|'done'>('all')
   const [ageFilter, setAgeFilter] = useState<'all'|'3-6'|'7-11'|'12-15'>('all')
+  const [sort, setSort] = useState<'default'|'age-asc'|'age-desc'>('default')
+  const [scrolled, setScrolled] = useState(false)
+  const sheetRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 80)
+    window.addEventListener('scroll', onScroll)
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
 
   useEffect(() => {
     if (!isDemoMode) {
-      supabase.from('wish_reservations').select('child_id').then(({ data }) => {
-        if (data) setReserved(new Set(data.map((r: any) => r.child_id)))
-      })
-    }
+      supabase.from('wish_reservations').select('child_id')
+        .then(({ data }) => { if (data) setReserved(new Set(data.map((r: any) => r.child_id))); setLoadingDB(false) })
+    } else { setLoadingDB(false) }
   }, [])
 
-  const filtered = children.filter(c => {
-    const matchSearch = c.name.toLowerCase().includes(search.toLowerCase()) || c.wish.toLowerCase().includes(search.toLowerCase())
-    const matchFilter = filter === 'all' || (filter === 'available' && !reserved.has(c.id)) || (filter === 'done' && reserved.has(c.id))
-    const matchAge = ageFilter === 'all' || (ageFilter === '3-6' && c.age >= 3 && c.age <= 6) || (ageFilter === '7-11' && c.age >= 7 && c.age <= 11) || (ageFilter === '12-15' && c.age >= 12 && c.age <= 15)
-    return matchSearch && matchFilter && matchAge
-  })
+  // Swipe to close modal
+  const touchStart = useRef(0)
+  const onTouchStart = useCallback((e: React.TouchEvent) => { touchStart.current = e.touches[0].clientY }, [])
+  const onTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (e.changedTouches[0].clientY - touchStart.current > 80) setSelected(null)
+  }, [])
 
-  const handleReserveClick = (e: React.MouseEvent, child: Child) => {
-    e.preventDefault(); e.stopPropagation()
-    if (reserved.has(child.id)) return
+  let filtered = CHILDREN.filter(c => {
+    const ms = c.name.toLowerCase().includes(search.toLowerCase()) || c.wish.toLowerCase().includes(search.toLowerCase())
+    const mf = filter === 'all' || (filter === 'available' && !reserved.has(c.id)) || (filter === 'done' && reserved.has(c.id))
+    const ma = ageFilter === 'all' || (ageFilter === '3-6' && c.age >= 3 && c.age <= 6) || (ageFilter === '7-11' && c.age >= 7 && c.age <= 11) || (ageFilter === '12-15' && c.age >= 12 && c.age <= 15)
+    return ms && mf && ma
+  })
+  if (sort === 'age-asc') filtered = [...filtered].sort((a, b) => a.age - b.age)
+  if (sort === 'age-desc') filtered = [...filtered].sort((a, b) => b.age - a.age)
+
+  const openModal = (child: Child) => {
     setSelected(child); setSubmitted(false); setForm({ name: '', phone: '', message: '' })
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!selected) return
-    setLoading(true)
+    setSubmitting(true)
     if (!isDemoMode) {
       await supabase.from('wish_reservations').upsert({ child_id: selected.id, donor_name: form.name, donor_phone: form.phone })
     }
@@ -85,37 +149,72 @@ export default function WishTreePage() {
       fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: chatId, text: msg, parse_mode: 'Markdown' }) }).catch(console.error)
     }
     setReserved(prev => new Set([...prev, selected.id]))
-    setLoading(false); setSubmitted(true)
+    setSubmitting(false); setSubmitted(true)
+    launchConfetti()
   }
 
-  const available = children.filter(c => !reserved.has(c.id)).length
+  const available = CHILDREN.filter(c => !reserved.has(c.id)).length
   const done = 30 - available
-  const ageWord = (n: number) => n === 1 ? 'год' : n < 5 ? 'года' : 'лет'
+  const pct = Math.round((done / 30) * 100)
 
   return (
     <div className="min-h-screen" style={{background:'linear-gradient(160deg,#f0fdf4 0%,#dcfce7 60%,#f0fdf4 100%)'}}>
+      <style>{`
+        @keyframes fadeInUp { from { opacity:0; transform:translateY(20px) } to { opacity:1; transform:translateY(0) } }
+        @keyframes slideUp { from { transform:translateY(100%) } to { transform:translateY(0) } }
+        @keyframes pulse-green { 0%,100% { box-shadow:0 0 0 0 rgba(34,197,94,0.4) } 50% { box-shadow:0 0 0 8px rgba(34,197,94,0) } }
+        .card-enter { animation: fadeInUp 0.4s ease both }
+        .sheet-enter { animation: slideUp 0.3s cubic-bezier(0.32,0.72,0,1) both }
+      `}</style>
+
+      {/* STICKY PROGRESS HEADER */}
+      <div style={{
+        position:'fixed',top:0,left:0,right:0,zIndex:100,
+        transform: scrolled ? 'translateY(0)' : 'translateY(-100%)',
+        transition:'transform 0.3s ease',
+        background:'rgba(255,255,255,0.95)',backdropFilter:'blur(12px)',
+        borderBottom:'1px solid rgba(34,197,94,0.15)',
+        padding:'10px 16px',
+      }}>
+        <div className="max-w-3xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span style={{fontSize:20}}>🌳</span>
+            <span className="font-bold text-gray-800 text-sm">Дерево желаний</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div style={{background:'#dcfce7',height:6,width:100,borderRadius:99,overflow:'hidden'}}>
+              <div style={{width:`${pct}%`,height:'100%',background:'linear-gradient(90deg,#4ade80,#22c55e)',transition:'width 0.6s ease',borderRadius:99}}/>
+            </div>
+            <span className="text-xs font-bold text-green-600">{done}/30</span>
+          </div>
+        </div>
+      </div>
 
       {/* HERO */}
-      <div style={{background:'linear-gradient(135deg,#14532d 0%,#166534 50%,#15803d 100%)'}} className="text-white">
-        <div className="max-w-3xl mx-auto px-4 pt-10 pb-8 text-center">
-          <div style={{fontSize:64,lineHeight:1}} className="mb-4">🌳</div>
+      <div style={{background:'linear-gradient(135deg,#14532d 0%,#166534 50%,#15803d 100%)',paddingTop:60}} className="text-white">
+        <div className="max-w-3xl mx-auto px-4 pt-6 pb-8 text-center">
+          <div style={{fontSize:64,lineHeight:1,filter:'drop-shadow(0 4px 12px rgba(0,0,0,0.3))'}} className="mb-4">🌳</div>
           <h1 className="text-3xl font-extrabold tracking-tight mb-1">Дерево желаний</h1>
-          <p style={{color:'rgba(255,255,255,0.7)'}} className="text-sm mb-7">Центр поддержки детей акимата города Астана</p>
+          <p style={{color:'rgba(255,255,255,0.65)'}} className="text-sm mb-7">Центр поддержки детей акимата города Астана</p>
 
           <div className="flex justify-center gap-3 flex-wrap mb-6">
-            {[{n:available,label:'ждут дарителя'},{n:done,label:'мечты исполнены'},{n:30,label:'детей всего'}].map(({n,label})=>(
-              <div key={label} style={{background:'rgba(255,255,255,0.15)',backdropFilter:'blur(8px)'}} className="rounded-2xl px-6 py-3 min-w-[90px]">
+            {[{n:available,label:'ждут дарителя',icon:'💚'},{n:done,label:'мечты исполнены',icon:'⭐'},{n:30,label:'детей всего',icon:'👦'}].map(({n,label,icon})=>(
+              <div key={label} style={{background:'rgba(255,255,255,0.12)',backdropFilter:'blur(12px)',border:'1px solid rgba(255,255,255,0.2)'}} className="rounded-2xl px-5 py-3 min-w-[90px]">
+                <div style={{fontSize:20}} className="mb-0.5">{icon}</div>
                 <div className="text-2xl font-black">{n}</div>
-                <div style={{color:'rgba(255,255,255,0.7)'}} className="text-xs mt-0.5">{label}</div>
+                <div style={{color:'rgba(255,255,255,0.65)',fontSize:11}} className="mt-0.5">{label}</div>
               </div>
             ))}
           </div>
 
-          <div className="max-w-sm mx-auto">
-            <div style={{background:'rgba(255,255,255,0.2)'}} className="rounded-full h-2 overflow-hidden">
-              <div style={{width:`${(done/30)*100}%`,background:'linear-gradient(90deg,#4ade80,#22c55e)',transition:'width 0.6s ease'}} className="h-full rounded-full"/>
+          <div className="max-w-xs mx-auto">
+            <div className="flex justify-between text-xs mb-1.5">
+              <span style={{color:'rgba(255,255,255,0.6)'}}>Прогресс</span>
+              <span style={{color:'rgba(255,255,255,0.9)'}} className="font-bold">{pct}%</span>
             </div>
-            <div style={{color:'rgba(255,255,255,0.6)'}} className="text-xs mt-1.5">{Math.round((done/30)*100)}% желаний исполнено</div>
+            <div style={{background:'rgba(255,255,255,0.15)',height:8,borderRadius:99,overflow:'hidden'}}>
+              <div style={{width:`${pct}%`,height:'100%',background:'linear-gradient(90deg,#4ade80,#22c55e)',transition:'width 0.8s ease',borderRadius:99,boxShadow:'0 0 8px rgba(74,222,128,0.6)'}}/>
+            </div>
           </div>
         </div>
       </div>
@@ -124,118 +223,153 @@ export default function WishTreePage() {
 
         {/* SEARCH + FILTERS */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-3 mb-6">
-          <input type="text" placeholder="🔍 Поиск по имени или желанию..."
-            value={search} onChange={e=>setSearch(e.target.value)}
-            className="w-full px-4 py-2.5 rounded-xl text-sm bg-gray-50 border border-gray-100 focus:outline-none focus:ring-2 focus:ring-green-400 mb-3"/>
-          <div className="flex gap-2 mb-2">
-            {(['all','available','done'] as const).map(f=>(
-              <button key={f} onClick={()=>setFilter(f)}
-                className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-all ${filter===f?'bg-green-600 text-white':'bg-gray-50 text-gray-500 hover:bg-gray-100'}`}>
-                {f==='all'?`Все (${children.length})`:f==='available'?`✅ Свободные (${available})`:`🎁 Исполненные (${done})`}
-              </button>
-            ))}
+          <div className="relative mb-3">
+            <span style={{position:'absolute',left:14,top:'50%',transform:'translateY(-50%)',fontSize:16}}>🔍</span>
+            <input type="text" placeholder="Поиск по имени или желанию..."
+              value={search} onChange={e=>setSearch(e.target.value)}
+              style={{paddingLeft:40}}
+              className="w-full px-4 py-2.5 rounded-xl text-sm bg-gray-50 border border-gray-100 focus:outline-none focus:ring-2 focus:ring-green-400"/>
           </div>
-          <div className="flex gap-2">
-            {([['all','👶 Любой возраст'],['3-6','3–6 лет'],['7-11','7–11 лет'],['12-15','12–15 лет']] as const).map(([f,label])=>(
-              <button key={f} onClick={()=>setAgeFilter(f)}
-                className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-all ${ageFilter===f?'bg-emerald-500 text-white':'bg-gray-50 text-gray-500 hover:bg-gray-100'}`}>
+
+          <div className="flex gap-1.5 mb-2 overflow-x-auto pb-0.5" style={{scrollbarWidth:'none'}}>
+            {([['all',`Все (${CHILDREN.length})`],['available',`✅ Свободные (${available})`],['done',`🎁 Исполненные (${done})`]] as const).map(([f,label])=>(
+              <button key={f} onClick={()=>setFilter(f)} style={{whiteSpace:'nowrap'}}
+                className={`flex-shrink-0 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${filter===f?'bg-green-600 text-white shadow-sm':'bg-gray-50 text-gray-500 hover:bg-gray-100'}`}>
                 {label}
               </button>
             ))}
+          </div>
+
+          <div className="flex gap-1.5 overflow-x-auto pb-0.5" style={{scrollbarWidth:'none'}}>
+            {([['all','👶 Все возрасты'],['3-6','3–6 лет'],['7-11','7–11 лет'],['12-15','12–15 лет']] as const).map(([f,label])=>(
+              <button key={f} onClick={()=>setAgeFilter(f)} style={{whiteSpace:'nowrap'}}
+                className={`flex-shrink-0 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${ageFilter===f?'bg-emerald-500 text-white shadow-sm':'bg-gray-50 text-gray-500 hover:bg-gray-100'}`}>
+                {label}
+              </button>
+            ))}
+            <div style={{marginLeft:'auto',flexShrink:0}}>
+              <select value={sort} onChange={e=>setSort(e.target.value as any)}
+                className="px-3 py-2 rounded-xl text-xs font-semibold bg-gray-50 text-gray-500 border-0 focus:outline-none focus:ring-2 focus:ring-green-400">
+                <option value="default">↕ По умолчанию</option>
+                <option value="age-asc">↑ Младшие первые</option>
+                <option value="age-desc">↓ Старшие первые</option>
+              </select>
+            </div>
           </div>
         </div>
 
         {/* GRID */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {filtered.map(child => {
-            const isReserved = reserved.has(child.id)
-            return (
-              <div key={child.id}
-                className={`group bg-white rounded-2xl overflow-hidden shadow-sm border transition-all duration-200 ${isReserved?'border-gray-100 opacity-65':'border-green-100 hover:shadow-xl hover:border-green-300'}`}>
+          {loadingDB
+            ? Array.from({length:6}).map((_,i)=><SkeletonCard key={i}/>)
+            : filtered.map((child, idx) => {
+              const isReserved = reserved.has(child.id)
+              return (
+                <div key={child.id} className="card-enter" style={{animationDelay:`${idx*40}ms`}}>
+                  <div className={`bg-white rounded-2xl overflow-hidden shadow-sm border transition-all duration-200 ${isReserved?'border-gray-100':'border-green-100 hover:shadow-xl hover:-translate-y-1 hover:border-green-300'}`}
+                    style={{position:'relative'}}>
 
-                {/* Top color bar */}
-                <div className={`h-1 ${isReserved?'bg-gray-200':'bg-gradient-to-r from-green-400 to-emerald-500'}`}/>
+                    {/* Reserved overlay */}
+                    {isReserved && (
+                      <div style={{position:'absolute',top:12,right:12,zIndex:2,background:'linear-gradient(135deg,#22c55e,#16a34a)',borderRadius:99,width:28,height:28,display:'flex',alignItems:'center',justifyContent:'center',fontSize:14,boxShadow:'0 2px 8px rgba(34,197,94,0.4)'}}>
+                        ✓
+                      </div>
+                    )}
 
-                {/* Clickable area → child page */}
-                <Link to={`/wish-tree/${child.id}`} className="block p-5 pb-3">
-                  <div className="flex items-center justify-between mb-4">
-                    <div style={{background:isReserved?'#f3f4f6':'linear-gradient(135deg,#dcfce7,#bbf7d0)',fontSize:28,width:52,height:52}} className="rounded-2xl flex items-center justify-center flex-shrink-0">
-                      {child.emoji}
+                    <div className={`h-1.5 ${isReserved?'bg-gradient-to-r from-gray-200 to-gray-300':'bg-gradient-to-r from-green-400 to-emerald-500'}`}/>
+
+                    <Link to={`/wish-tree/${child.id}`} className="block p-5 pb-3" style={{opacity: isReserved ? 0.7 : 1}}>
+                      <div className="flex items-center justify-between mb-4">
+                        <div style={{background:isReserved?'#f9fafb':'linear-gradient(135deg,#dcfce7,#bbf7d0)',fontSize:28,width:52,height:52,transition:'transform 0.2s'}} className="rounded-2xl flex items-center justify-center flex-shrink-0 hover:scale-110">
+                          {child.emoji}
+                        </div>
+                        <span style={{fontSize:11}} className={`font-bold px-3 py-1 rounded-full ${isReserved?'bg-green-50 text-green-600 border border-green-100':'bg-gray-50 text-gray-500 border border-gray-100'}`}>
+                          {isReserved?'✓ Исполнено':'Свободно'}
+                        </span>
+                      </div>
+                      <div className="font-bold text-gray-800 text-base leading-tight">{child.name}</div>
+                      <div className="text-xs text-gray-400 mb-3">{child.age} {ageWord(child.age)}</div>
+                      <div style={{background:'linear-gradient(135deg,#f8fffe,#f0fdf4)',border:'1px solid #dcfce7'}} className="rounded-xl p-3">
+                        <div style={{fontSize:10,letterSpacing:'0.08em'}} className="text-green-600 uppercase font-black mb-1">Мечта</div>
+                        <div className="text-sm text-gray-700 font-semibold leading-snug">{child.wish}</div>
+                        {child.details && !child.details.startsWith('http') && <div className="text-xs text-gray-400 mt-1">{child.details}</div>}
+                        {child.details && child.details.startsWith('http') && <div className="text-xs text-blue-500 mt-1">🛒 Посмотреть на Kaspi</div>}
+                      </div>
+                    </Link>
+
+                    <div className="px-5 pb-5 pt-2">
+                      <button onClick={()=>!isReserved&&openModal(child)} disabled={isReserved}
+                        style={!isReserved?{background:'linear-gradient(135deg,#22c55e,#16a34a)',boxShadow:'0 4px 12px rgba(34,197,94,0.35)'}:{background:'#f3f4f6'}}
+                        className={`w-full py-3 rounded-xl text-sm font-black transition-all ${isReserved?'text-gray-400 cursor-not-allowed':'text-white active:scale-95 hover:opacity-90'}`}>
+                        {isReserved?'Желание исполнено ✓':'💝 Исполнить желание'}
+                      </button>
                     </div>
-                    <span style={{fontSize:11}} className={`font-semibold px-3 py-1 rounded-full ${isReserved?'bg-gray-100 text-gray-400':'bg-green-50 text-green-600 border border-green-100'}`}>
-                      {isReserved?'✓ Исполнено':'Свободно'}
-                    </span>
                   </div>
-                  <div className="font-bold text-gray-800 text-base leading-tight">{child.name}</div>
-                  <div className="text-xs text-gray-400 mb-3">{child.age} {ageWord(child.age)}</div>
-                  <div className="bg-gray-50 rounded-xl p-3">
-                    <div style={{fontSize:11}} className="text-gray-400 uppercase tracking-wide font-semibold mb-1">Мечта</div>
-                    <div className="text-sm text-gray-700 font-medium leading-snug">{child.wish}</div>
-                    {child.details && !child.details.startsWith('http') && (
-                      <div className="text-xs text-gray-400 mt-1">{child.details}</div>
-                    )}
-                    {child.details && child.details.startsWith('http') && (
-                      <div className="text-xs text-blue-500 mt-1">🛒 Посмотреть на Kaspi</div>
-                    )}
-                  </div>
-                </Link>
-
-                {/* Button outside Link - no conflict */}
-                <div className="px-5 pb-5 pt-3">
-                  <button onClick={()=>!isReserved&&(setSelected(child),setSubmitted(false),setForm({name:'',phone:'',message:''}))} disabled={isReserved}
-                    className={`w-full py-3 rounded-xl text-sm font-bold transition-all ${isReserved?'bg-gray-100 text-gray-400 cursor-not-allowed':'bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700 shadow-sm active:scale-95'}`}>
-                    {isReserved?'Желание уже исполнено':'💝 Исполнить желание'}
-                  </button>
                 </div>
-              </div>
-            )
-          })}
+              )
+            })
+          }
         </div>
 
-        {filtered.length===0&&(
-          <div className="text-center py-20 text-gray-400">
-            <div style={{fontSize:48}} className="mb-3">🔍</div>
-            <div>Ничего не найдено</div>
+        {!loadingDB && filtered.length===0 && (
+          <div className="text-center py-20">
+            <div style={{fontSize:56}} className="mb-4">🔍</div>
+            <div className="text-gray-400 text-sm">Ничего не найдено</div>
+            <button onClick={()=>{setSearch('');setFilter('all');setAgeFilter('all')}} className="mt-4 px-5 py-2 bg-green-50 text-green-600 rounded-xl text-sm font-semibold">Сбросить фильтры</button>
           </div>
         )}
       </div>
 
-      {/* MODAL */}
-      {selected&&(
-        <div style={{background:'rgba(0,0,0,0.6)',backdropFilter:'blur(4px)'}} className="fixed inset-0 flex items-end sm:items-center justify-center z-50 p-4"
+      {/* BOTTOM SHEET MODAL */}
+      {selected && (
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.55)',backdropFilter:'blur(6px)',zIndex:200,display:'flex',alignItems:'flex-end',justifyContent:'center'}}
           onClick={e=>e.target===e.currentTarget&&setSelected(null)}>
-          <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden">
-            {!submitted?(
+          <div ref={sheetRef} className="sheet-enter bg-white w-full max-w-lg overflow-hidden"
+            style={{borderRadius:'24px 24px 0 0',maxHeight:'92vh',overflowY:'auto'}}
+            onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+
+            {/* Drag handle */}
+            <div style={{display:'flex',justifyContent:'center',paddingTop:12,paddingBottom:4}}>
+              <div style={{width:40,height:4,background:'#e5e7eb',borderRadius:99}}/>
+            </div>
+
+            {!submitted ? (
               <>
-                <div style={{background:'linear-gradient(135deg,#14532d,#16a34a)'}} className="text-white p-6">
-                  <div style={{fontSize:36}} className="mb-2">{selected.emoji}</div>
-                  <div className="font-black text-xl leading-tight">{selected.name}</div>
+                <div style={{background:'linear-gradient(135deg,#14532d,#16a34a)'}} className="text-white mx-4 rounded-2xl p-5 mb-5">
+                  <div style={{fontSize:40}} className="mb-2">{selected.emoji}</div>
+                  <div className="font-black text-xl">{selected.name}</div>
                   <div style={{color:'rgba(255,255,255,0.75)'}} className="text-sm mt-1">🎁 {selected.wish}</div>
+                  {selected.details && !selected.details.startsWith('http') && (
+                    <div style={{background:'rgba(255,255,255,0.15)',borderRadius:10}} className="text-xs px-3 py-1.5 mt-2 inline-block">{selected.details}</div>
+                  )}
                 </div>
-                <div className="p-6">
-                  <p className="text-sm text-gray-500 mb-4">Оставьте контакты — с вами свяжутся для передачи подарка</p>
+                <div className="px-4 pb-8">
+                  <p className="text-sm text-gray-500 mb-4 text-center">Оставьте контакты — с вами свяжутся для передачи подарка</p>
                   <form onSubmit={handleSubmit} className="space-y-3">
                     <input required type="text" placeholder="Ваше имя *" value={form.name} onChange={e=>setForm({...form,name:e.target.value})}
-                      className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"/>
+                      className="w-full border border-gray-200 rounded-xl px-4 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 bg-gray-50"/>
                     <input required type="tel" placeholder="Номер телефона *" value={form.phone} onChange={e=>setForm({...form,phone:e.target.value})}
-                      className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"/>
+                      className="w-full border border-gray-200 rounded-xl px-4 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 bg-gray-50"/>
                     <textarea placeholder="Сообщение (необязательно)" value={form.message} onChange={e=>setForm({...form,message:e.target.value})} rows={2}
-                      className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 resize-none"/>
+                      className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 bg-gray-50 resize-none"/>
                     <div className="flex gap-3 pt-1">
-                      <button type="button" onClick={()=>setSelected(null)} className="flex-1 py-3 border border-gray-200 rounded-xl text-sm text-gray-600 font-medium">Отмена</button>
-                      <button type="submit" disabled={loading} className="flex-1 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl text-sm font-bold disabled:opacity-50 shadow-sm">
-                        {loading?'...':'💝 Подтвердить'}
+                      <button type="button" onClick={()=>setSelected(null)} className="flex-1 py-3.5 border border-gray-200 rounded-xl text-sm text-gray-600 font-semibold">Отмена</button>
+                      <button type="submit" disabled={submitting}
+                        style={{background:'linear-gradient(135deg,#22c55e,#16a34a)',boxShadow:'0 4px 12px rgba(34,197,94,0.4)'}}
+                        className="flex-1 py-3.5 text-white rounded-xl text-sm font-black disabled:opacity-50">
+                        {submitting?'Отправляем...':'💝 Подтвердить'}
                       </button>
                     </div>
                   </form>
                 </div>
               </>
-            ):(
-              <div className="text-center p-10">
-                <div style={{background:'linear-gradient(135deg,#dcfce7,#bbf7d0)',fontSize:48,width:80,height:80}} className="rounded-full flex items-center justify-center mx-auto mb-5">🌟</div>
-                <h2 className="text-xl font-black text-gray-800 mb-2">Спасибо!</h2>
-                <p className="text-gray-500 text-sm mb-6">Вы делаете этот мир добрее.<br/>С вами свяжутся для передачи подарка.</p>
-                <button onClick={()=>setSelected(null)} className="px-8 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-bold shadow-sm">Закрыть</button>
+            ) : (
+              <div className="text-center px-6 py-10">
+                <div style={{background:'linear-gradient(135deg,#dcfce7,#bbf7d0)',fontSize:52,width:88,height:88,borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 20px'}} className="shadow-lg">🌟</div>
+                <h2 className="text-2xl font-black text-gray-800 mb-2">Спасибо!</h2>
+                <p className="text-gray-500 text-sm mb-6 leading-relaxed">Вы исполняете мечту ребёнка.<br/>С вами свяжутся для передачи подарка. 💚</p>
+                <button onClick={()=>setSelected(null)} style={{background:'linear-gradient(135deg,#22c55e,#16a34a)',boxShadow:'0 4px 16px rgba(34,197,94,0.4)'}}
+                  className="px-10 py-3.5 text-white rounded-xl font-black text-sm">Закрыть</button>
               </div>
             )}
           </div>
