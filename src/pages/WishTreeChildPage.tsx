@@ -244,17 +244,31 @@ export default function WishTreeChildPage() {
         {/* PREV / NEXT */}
         <div className="mt-4 grid grid-cols-2 gap-3">
           {prev ? (
-            <Link to={`/wish-tree/${prev.id}`} className="bg-white border border-gray-100 rounded-2xl p-3 shadow-sm hover:shadow-md hover:border-green-200 transition-all text-left">
-              <div style={{fontSize:10,color:'#9ca3af',marginBottom:4}}>← Предыдущий</div>
-              <div style={{fontSize:18}} className="mb-1">{prev.emoji}</div>
-              <div className="text-xs font-bold text-gray-700 leading-tight">{prev.name.split(' ')[0]}</div>
+            <Link to={`/wish-tree/${prev.id}`}
+              style={{background:'white',border:'1px solid #e5e7eb'}}
+              className="rounded-2xl p-4 shadow-sm hover:shadow-md hover:border-green-200 transition-all text-left group">
+              <div style={{fontSize:10,color:'#9ca3af',marginBottom:6,letterSpacing:'0.05em'}} className="uppercase font-semibold">← Предыдущий</div>
+              <div className="flex items-center gap-2">
+                <div style={{background:'linear-gradient(135deg,#dcfce7,#bbf7d0)',width:36,height:36,borderRadius:10,fontSize:18,display:'flex',alignItems:'center',justifyContent:'center'}} className="group-hover:scale-110 transition-transform">{prev.emoji}</div>
+                <div>
+                  <div className="text-xs font-black text-gray-700 leading-tight">{prev.name.split(' ')[0]}</div>
+                  <div style={{fontSize:10,color:'#9ca3af'}}>{prev.age} лет</div>
+                </div>
+              </div>
             </Link>
           ) : <div/>}
           {next ? (
-            <Link to={`/wish-tree/${next.id}`} className="bg-white border border-gray-100 rounded-2xl p-3 shadow-sm hover:shadow-md hover:border-green-200 transition-all text-right">
-              <div style={{fontSize:10,color:'#9ca3af',marginBottom:4}}>Следующий →</div>
-              <div style={{fontSize:18}} className="mb-1">{next.emoji}</div>
-              <div className="text-xs font-bold text-gray-700 leading-tight">{next.name.split(' ')[0]}</div>
+            <Link to={`/wish-tree/${next.id}`}
+              style={{background:'linear-gradient(135deg,#f0fdf4,#dcfce7)',border:'1px solid #bbf7d0'}}
+              className="rounded-2xl p-4 shadow-sm hover:shadow-md hover:border-green-300 transition-all text-right group">
+              <div style={{fontSize:10,color:'#16a34a',marginBottom:6,letterSpacing:'0.05em'}} className="uppercase font-semibold">Следующий →</div>
+              <div className="flex items-center justify-end gap-2">
+                <div>
+                  <div className="text-xs font-black text-gray-700 leading-tight">{next.name.split(' ')[0]}</div>
+                  <div style={{fontSize:10,color:'#9ca3af'}}>{next.age} лет</div>
+                </div>
+                <div style={{background:'linear-gradient(135deg,#22c55e,#16a34a)',width:36,height:36,borderRadius:10,fontSize:18,display:'flex',alignItems:'center',justifyContent:'center'}} className="group-hover:scale-110 transition-transform shadow-sm">{next.emoji}</div>
+              </div>
             </Link>
           ) : <div/>}
         </div>
