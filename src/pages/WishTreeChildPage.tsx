@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useParams, Link } from 'react-router-dom'
 
 interface Child {
   id: number
@@ -52,101 +52,87 @@ function getAgeEmoji(age: number): string {
 
 interface DonorForm { name: string; phone: string; message: string }
 
-export default function WishTreePage() {
-  const [search, setSearch] = useState('')
-  const [selected, setSelected] = useState<Child | null>(null)
+export default function WishTreeChildPage() {
+  const { id } = useParams<{ id: string }>()
+  const child = children.find(c => c.id === Number(id))
+
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState<DonorForm>({ name: '', phone: '', message: '' })
   const [submitted, setSubmitted] = useState(false)
-  const [localReserved, setLocalReserved] = useState<number[]>([])
 
-  const filtered = children.filter(c =>
-    c.wish.toLowerCase().includes(search.toLowerCase()) ||
-    c.name.toLowerCase().includes(search.toLowerCase())
-  )
-
-  const handleReserve = (child: Child) => {
-    setSelected(child); setShowForm(true); setSubmitted(false)
-    setForm({ name: '', phone: '', message: '' })
+  if (!child) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-green-50">
+        <div className="text-center">
+          <div className="text-6xl mb-4">🌳</div>
+          <h1 className="text-2xl font-bold text-gray-700 mb-2">Карточка не найдена</h1>
+          <Link to="/wish-tree" className="text-green-600 underline">← Все желания</Link>
+        </div>
+      </div>
+    )
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     const botToken = (import.meta as any).env?.VITE_TELEGRAM_BOT_TOKEN
     const chatId = (import.meta as any).env?.VITE_TELEGRAM_CHAT_ID
-    if (botToken && chatId && selected) {
-      const msg = `🌳 *ДЕРЕВО ЖЕЛАНИЙ*\n\n👤 ${selected.name}, ${selected.age} лет\n🎁 ${selected.wish}\n📋 ${selected.details || '—'}\n\n💝 Благотворитель: ${form.name}\n📞 ${form.phone}\n💬 ${form.message || '—'}`
+    if (botToken && chatId) {
+      const msg = `🌳 *ДЕРЕВО ЖЕЛАНИЙ — ЗАЯВКА*\n\n👤 ${child.name}, ${child.age} лет\n🎁 ${child.wish}\n📋 ${child.details || '—'}\n\n💝 ${form.name}\n📞 ${form.phone}\n💬 ${form.message || '—'}`
       fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ chat_id: chatId, text: msg, parse_mode: 'Markdown' })
       }).catch(console.error)
     }
-    setLocalReserved(prev => [...prev, selected!.id])
     setSubmitted(true)
   }
 
-  const isReserved = (id: number) => localReserved.includes(id) || children.find(c => c.id === id)?.reserved
-
   return (
     <div className="min-h-screen bg-gradient-to-b from-green-50 to-white">
-      <div className="bg-gradient-to-r from-green-700 to-green-500 text-white py-16 px-4 text-center">
-        <div className="text-6xl mb-4">🌳</div>
-        <h1 className="text-4xl font-bold mb-3">Дерево желаний</h1>
-        <p className="text-lg text-green-100 max-w-2xl mx-auto">
-          Центр поддержки детей акимата города Астана.<br/>
-          Каждый ребёнок загадал своё желание — помогите его исполнить!
-        </p>
-        <div className="mt-6 flex justify-center gap-6 text-green-100 text-sm">
-          <span>🎁 {children.length} желаний</span>
-          <span>💝 {localReserved.length} уже исполняется</span>
-        </div>
+      {/* Back */}
+      <div className="max-w-lg mx-auto px-4 pt-6">
+        <Link to="/wish-tree" className="text-green-600 text-sm flex items-center gap-1 hover:underline">
+          ← Все желания
+        </Link>
       </div>
 
-      <div className="max-w-5xl mx-auto px-4 py-10">
-        <div className="mb-8">
-          <input type="text" placeholder="🔍 Поиск по имени или желанию..."
-            value={search} onChange={e => setSearch(e.target.value)}
-            className="w-full border border-gray-200 rounded-xl px-5 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-400 shadow-sm" />
-        </div>
+      {/* Card */}
+      <div className="max-w-lg mx-auto px-4 py-8">
+        <div className="bg-white rounded-3xl shadow-xl border-2 border-green-200 overflow-hidden">
+          {/* Header */}
+          <div className="bg-gradient-to-r from-green-600 to-green-400 text-white p-8 text-center">
+            <div className="text-7xl mb-3">{getAgeEmoji(child.age)}</div>
+            <h1 className="text-2xl font-bold">{child.name}</h1>
+            <p className="text-green-100 mt-1">{child.age} лет</p>
+          </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {filtered.map(child => {
-            const reserved = isReserved(child.id)
-            return (
-              <div key={child.id} className={`rounded-2xl border-2 p-5 shadow-sm transition-all ${reserved ? 'border-gray-200 bg-gray-50 opacity-60' : 'border-green-200 bg-white hover:shadow-md hover:border-green-400'}`}>
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <div className="text-2xl mb-1">{getAgeEmoji(child.age)}</div>
-                    <div className="font-semibold text-gray-800 text-sm">{child.name}</div>
-                    <div className="text-xs text-gray-400 mt-0.5">{child.age} лет</div>
-                  </div>
-                  {reserved && <span className="text-xs bg-gray-200 text-gray-500 px-2 py-1 rounded-full">занято</span>}
-                </div>
-                <div className="bg-green-50 rounded-xl p-3 mb-3">
-                  <div className="text-xs text-green-600 font-semibold mb-1">🎁 Желание:</div>
-                  <div className="text-sm text-gray-700">{child.wish}</div>
-                  {child.details && (child.details.startsWith('http')
-                    ? <a href={child.details} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 underline mt-1 block">Ссылка на Kaspi</a>
-                    : <div className="text-xs text-gray-400 mt-1">{child.details}</div>)}
-                </div>
-                <button onClick={() => !reserved && handleReserve(child)} disabled={reserved}
-                  className={`w-full py-2 rounded-xl text-sm font-semibold transition-all ${reserved ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-green-600 text-white hover:bg-green-700 active:scale-95'}`}>
-                  {reserved ? '✓ Уже берут' : '💝 Исполнить желание'}
-                </button>
-              </div>
-            )
-          })}
-        </div>
-      </div>
+          {/* Wish */}
+          <div className="p-6">
+            <div className="bg-green-50 rounded-2xl p-5 mb-5 text-center">
+              <div className="text-3xl mb-2">🎁</div>
+              <div className="text-xs text-green-600 font-semibold uppercase tracking-wide mb-2">Желание ребёнка</div>
+              <div className="text-lg font-semibold text-gray-800">{child.wish}</div>
+              {child.details && (
+                child.details.startsWith('http')
+                  ? <a href={child.details} target="_blank" rel="noopener noreferrer"
+                      className="mt-2 inline-block text-sm text-blue-500 underline">Посмотреть на Kaspi →</a>
+                  : <div className="text-sm text-gray-500 mt-2">{child.details}</div>
+              )}
+            </div>
 
-      {showForm && selected && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
+            {/* Organization */}
+            <div className="text-center text-xs text-gray-400 mb-6">
+              Центр поддержки детей акимата города Астана
+            </div>
+
+            {/* CTA */}
             {!submitted ? (
-              <>
-                <h2 className="text-xl font-bold text-gray-800 mb-1">💝 Исполнить желание</h2>
-                <p className="text-sm text-gray-500 mb-4">{selected.name}, {selected.age} лет — {selected.wish}</p>
-                <form onSubmit={handleSubmit} className="space-y-4">
+              !showForm ? (
+                <button onClick={() => setShowForm(true)}
+                  className="w-full py-4 bg-green-600 text-white rounded-2xl text-lg font-bold hover:bg-green-700 active:scale-95 transition-all shadow-lg">
+                  💝 Исполнить желание
+                </button>
+              ) : (
+                <form onSubmit={handleSubmit} className="space-y-3">
                   <input required type="text" placeholder="Ваше имя *" value={form.name}
                     onChange={e => setForm({ ...form, name: e.target.value })}
                     className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-400" />
@@ -154,30 +140,33 @@ export default function WishTreePage() {
                     onChange={e => setForm({ ...form, phone: e.target.value })}
                     className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-400" />
                   <textarea placeholder="Сообщение (по желанию)" value={form.message}
-                    onChange={e => setForm({ ...form, message: e.target.value })} rows={3}
+                    onChange={e => setForm({ ...form, message: e.target.value })} rows={2}
                     className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 resize-none" />
                   <div className="flex gap-3">
                     <button type="button" onClick={() => setShowForm(false)}
-                      className="flex-1 py-3 border border-gray-200 rounded-xl text-sm text-gray-600 hover:bg-gray-50">Отмена</button>
+                      className="flex-1 py-3 border border-gray-200 rounded-xl text-sm text-gray-600">Назад</button>
                     <button type="submit"
-                      className="flex-1 py-3 bg-green-600 text-white rounded-xl text-sm font-semibold hover:bg-green-700">Подтвердить</button>
+                      className="flex-1 py-3 bg-green-600 text-white rounded-xl text-sm font-bold hover:bg-green-700">Подтвердить</button>
                   </div>
                 </form>
-              </>
+              )
             ) : (
-              <div className="text-center py-6">
-                <div className="text-5xl mb-4">🌟</div>
-                <h2 className="text-xl font-bold mb-2">Спасибо!</h2>
-                <p className="text-gray-500 text-sm mb-6">С вами свяжутся для передачи подарка. Вы делаете этот мир добрее!</p>
-                <button onClick={() => { setShowForm(false); setSelected(null) }}
-                  className="bg-green-600 text-white px-8 py-3 rounded-xl font-semibold hover:bg-green-700">Закрыть</button>
+              <div className="text-center py-4">
+                <div className="text-5xl mb-3">🌟</div>
+                <h2 className="text-xl font-bold text-gray-800 mb-2">Спасибо!</h2>
+                <p className="text-gray-500 text-sm">С вами свяжутся для передачи подарка.<br/>Вы делаете этот мир добрее!</p>
               </div>
             )}
           </div>
         </div>
-      )}
+
+        {/* Share */}
+        <div className="text-center mt-6">
+          <p className="text-xs text-gray-400 mb-2">Поделитесь этой карточкой</p>
+          <button onClick={() => navigator.share?.({ url: window.location.href, title: `Желание ${child.name}` }) || navigator.clipboard.writeText(window.location.href)}
+            className="text-sm text-green-600 underline">📋 Скопировать ссылку</button>
+        </div>
+      </div>
     </div>
   )
 }
-
-// Individual child page - exported separately
