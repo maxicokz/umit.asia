@@ -123,32 +123,27 @@ export default function WishTreePage() {
             const isReserved = reserved.has(child.id)
             return (
               <div key={child.id} className={`bg-white rounded-2xl shadow-sm border-2 p-4 transition-all ${isReserved ? 'border-gray-200 opacity-60' : 'border-green-100 hover:border-green-300 hover:shadow-md'}`}>
-                <div className="flex items-start justify-between mb-2">
-                  <div>
-                    <div className="font-semibold text-gray-800 text-sm">{child.name}</div>
-                    <div className="text-xs text-gray-400">{child.age} лет</div>
+                <Link to={`/wish-tree/${child.id}`} className="block mb-3">
+                  <div className="flex items-start justify-between mb-2">
+                    <div>
+                      <div className="font-semibold text-gray-800 text-sm">{child.name}</div>
+                      <div className="text-xs text-gray-400">{child.age} лет</div>
+                    </div>
+                    {isReserved && <span className="text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded-full">занято</span>}
                   </div>
-                  {isReserved && <span className="text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded-full">занято</span>}
-                </div>
-                <div className="text-sm text-gray-600 mb-1">🎁 {child.wish}</div>
-                {child.details && !child.details.startsWith('http') && (
-                  <div className="text-xs text-gray-400 mb-2">{child.details}</div>
-                )}
-                {child.details && child.details.startsWith('http') && (
-                  <a href={child.details} target="_blank" rel="noopener noreferrer"
-                    className="text-xs text-blue-500 underline block mb-2">Посмотреть на Kaspi →</a>
-                )}
-                <div className="flex gap-2 mt-3">
-                  <Link to={`/wish-tree/${child.id}`}
-                    className="flex-1 py-2 rounded-xl text-xs text-center text-green-600 border border-green-200 hover:bg-green-50 transition-all font-medium">
-                    🔗 Карточка
-                  </Link>
-                  <button onClick={() => !isReserved && handleReserve(child)}
-                    disabled={isReserved}
-                    className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-all ${isReserved ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-green-600 text-white hover:bg-green-700 active:scale-95'}`}>
-                    {isReserved ? '✓ Занято' : '💝 Исполнить'}
-                  </button>
-                </div>
+                  <div className="text-sm text-gray-600 mb-1">🎁 {child.wish}</div>
+                  {child.details && !child.details.startsWith('http') && (
+                    <div className="text-xs text-gray-400">{child.details}</div>
+                  )}
+                  {child.details && child.details.startsWith('http') && (
+                    <span className="text-xs text-blue-500 underline">Посмотреть на Kaspi →</span>
+                  )}
+                </Link>
+                <button onClick={() => !isReserved && handleReserve(child)}
+                  disabled={isReserved}
+                  className={`w-full py-2 rounded-xl text-xs font-semibold transition-all ${isReserved ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-green-600 text-white hover:bg-green-700 active:scale-95'}`}>
+                  {isReserved ? '✓ Занято' : '💝 Исполнить желание'}
+                </button>
               </div>
             )
           })}
