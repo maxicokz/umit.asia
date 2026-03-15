@@ -108,9 +108,16 @@ export default function WishTreePage() {
   }, [])
 
   useEffect(() => {
-    if (!isDemoMode) {
+    if (!isDemoMode && supabase) {
+      // 5s timeout — cards already visible, this just updates reserved status
+      const timer = setTimeout(() => setLoadingDB(false), 5000)
       supabase.from('wish_reservations').select('child_id')
-        .then(({ data }) => { if (data) setReserved(new Set(data.map((r: any) => r.child_id))); setLoadingDB(false) })
+        .then(({ data }) => {
+          clearTimeout(timer)
+          if (data) setReserved(new Set(data.map((r: any) => r.child_id)))
+          setLoadingDB(false)
+        })
+        .catch(() => { clearTimeout(timer); setLoadingDB(false) })
     } else { setLoadingDB(false) }
   }, [])
 
