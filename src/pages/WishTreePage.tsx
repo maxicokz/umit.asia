@@ -89,7 +89,7 @@ function SkeletonCard() {
 
 export default function WishTreePage() {
   const [reserved, setReserved] = useState<Set<number>>(new Set())
-  const [loadingDB, setLoadingDB] = useState(true)
+  const [loadingDB, setLoadingDB] = useState(false) // cards show immediately, reserved status loads in background
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState<Child | null>(null)
   const [form, setForm] = useState({ name: '', phone: '', message: '' })
